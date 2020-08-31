@@ -197,7 +197,7 @@ namespace Framework.Data.MsSql
                 throw new ArgumentNullException(nameof(name));
 
             name = MsSqlHelper.FormatParamName(name);
-            AddParameter(new SqlParameter(name, value));
+            AddParameter(new SqlParameter(name, value ?? DBNull.Value));
         }
     }
 
