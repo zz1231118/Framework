@@ -9,7 +9,7 @@
 
         protected override bool IsValidCloseCode(int code)
         {
-            if (!(this.CloseStatusCode is Rfc6455CloseStatusCode closeCode)) return false;
+            if (CloseStatusCode is not Rfc6455CloseStatusCode closeCode) return false;
             if (code >= 0 && code <= 999) return false;
 
             if (code >= 1000 && code <= 2999)

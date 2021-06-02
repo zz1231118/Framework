@@ -2,13 +2,13 @@
 
 namespace Framework.Injection
 {
-    internal class ServiceDescriptor
+    public class ServiceDescriptor
     {
-        private readonly ServiceLifetime lifetime;
         private readonly Type serviceType;
+        private readonly ServiceLifetime lifetime;
         private Type implementationType;
         private object implementationInstance;
-        private Func<IServiceProvider, object> implementationFactory;
+        private Func<IContainer, object> implementationFactory;
 
         private ServiceDescriptor(Type serviceType, ServiceLifetime lifetime)
         {
@@ -28,11 +28,13 @@ namespace Framework.Injection
             this.implementationInstance = implementationInstance;
         }
 
-        public ServiceDescriptor(Type serviceType, Func<IServiceProvider, object> implementationFactory, ServiceLifetime lifetime)
+        public ServiceDescriptor(Type serviceType, Func<IContainer, object> implementationFactory, ServiceLifetime lifetime)
             : this(serviceType, lifetime)
         {
             this.implementationFactory = implementationFactory;
         }
+
+        internal ServiceMetadata Metadata { get; set; }
 
         public ServiceLifetime Lifetime => lifetime;
 
@@ -44,15 +46,10 @@ namespace Framework.Injection
             {
                 if (implementationType == null)
                 {
-                    if (implementationInstance != null)
-                    {
-                        implementationType = implementationInstance.GetType();
-                    }
-                    else if (implementationFactory != null)
-                    {
-                        implementationType = implementationFactory.GetType().GenericTypeArguments[1];
-                    }
+                    if (implementationInstance != null) implementationType = implementationInstance.GetType();
+                    else throw new InvalidOperationException("get implementation type error.");
                 }
+
                 return implementationType;
             }
         }
@@ -63,7 +60,7 @@ namespace Framework.Injection
             set => implementationInstance = value;
         }
 
-        public Func<IServiceProvider, object> ImplementationFactory
+        public Func<IContainer, object> ImplementationFactory
         {
             get => implementationFactory;
             set => implementationFactory = value;

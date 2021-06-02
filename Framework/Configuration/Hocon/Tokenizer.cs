@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Framework.Configuration.Hocon
 {
-    public class Tokenizer
+    internal class Tokenizer
     {
         private readonly string _text;
         private readonly Stack<int> _indexStack = new Stack<int>();
@@ -26,10 +26,12 @@ namespace Framework.Configuration.Hocon
         {
             _indexStack.Push(_index);
         }
+
         public void Pop()
         {
             _index = _indexStack.Pop();
         }
+
         public bool Matches(string pattern)
         {
             if (pattern.Length + _index > _text.Length)
@@ -40,7 +42,8 @@ namespace Framework.Configuration.Hocon
 
             return false;
         }
-        public string Take(int length)
+
+        public string? Take(int length)
         {
             if (_index + length > _text.Length)
                 return null;
@@ -49,6 +52,7 @@ namespace Framework.Configuration.Hocon
             _index += length;
             return s;
         }
+
         public bool Matches(params string[] patterns)
         {
             foreach (string pattern in patterns)
@@ -61,6 +65,7 @@ namespace Framework.Configuration.Hocon
             }
             return false;
         }
+
         public char Peek()
         {
             if (EoF)
@@ -68,6 +73,7 @@ namespace Framework.Configuration.Hocon
 
             return _text[_index];
         }
+
         public char Take()
         {
             if (EoF)
@@ -75,6 +81,7 @@ namespace Framework.Configuration.Hocon
 
             return _text[_index++];
         }
+
         public void PullWhitespace()
         {
             while (!EoF && char.IsWhiteSpace(Peek()))
@@ -84,7 +91,7 @@ namespace Framework.Configuration.Hocon
         }
     }
 
-    public class HoconTokenizer : Tokenizer
+    internal class HoconTokenizer : Tokenizer
     {
         private const string NotInUnquotedKey = "$\"{}[]:=,#`^?!@*&\\.";
         private const string NotInUnquotedText = "$\"{}[]:=,#`^?!@*&\\";
@@ -104,6 +111,7 @@ namespace Framework.Configuration.Hocon
                 }
             } while (IsWhitespace());
         }
+
         public string PullRestOfLine()
         {
             var sb = new StringBuilder();
@@ -121,6 +129,7 @@ namespace Framework.Configuration.Hocon
             }
             return sb.ToString().Trim();
         }
+
         public Token PullNext()
         {
             PullWhitespaceAndComments();
@@ -162,7 +171,7 @@ namespace Framework.Configuration.Hocon
             }
             if (EoF)
             {
-                return new Token(TokenKind.EoF);
+                return new Token(TokenKind.EoF, "<eof>");
             }
             throw new FormatException("unknown token");
         }
@@ -171,82 +180,100 @@ namespace Framework.Configuration.Hocon
         {
             return Matches("\"");
         }
+
         public Token PullArrayEnd()
         {
             Take();
-            return new Token(TokenKind.ArrayEnd);
+            return new Token(TokenKind.ArrayEnd, "<arrayend>");
         }
+
         public bool IsArrayEnd()
         {
             return Matches("]");
         }
+
         public bool IsArrayStart()
         {
             return Matches("[");
         }
+
         public Token PullArrayStart()
         {
             Take();
-            return new Token(TokenKind.ArrayStart);
+            return new Token(TokenKind.ArrayStart, "<arraystart>");
         }
+
         public Token PullDot()
         {
             Take();
-            return new Token(TokenKind.Dot);
+            return new Token(TokenKind.Dot, "<dot>");
         }
+
         public Token PullComma()
         {
             Take();
-            return new Token(TokenKind.Comma);
+            return new Token(TokenKind.Comma, "<comma>");
         }
+
         public Token PullStartOfObject()
         {
             Take();
-            return new Token(TokenKind.ObjectStart);
+            return new Token(TokenKind.ObjectStart, "<objectstart>");
         }
+
         public Token PullEndOfObject()
         {
             Take();
-            return new Token(TokenKind.ObjectEnd);
+            return new Token(TokenKind.ObjectEnd, "<objectend>");
         }
+
         public Token PullAssignment()
         {
             Take();
-            return new Token(TokenKind.Assign);
+            return new Token(TokenKind.Assign, "<assign>");
         }
+
         public bool IsComma()
         {
             return Matches(",");
         }
+
         public bool IsDot()
         {
             return Matches(".");
         }
+
         public bool IsObjectStart()
         {
             return Matches("{");
         }
+
         public bool IsEndOfObject()
         {
             return Matches("}");
         }
+
         public bool IsAssignment()
         {
             return Matches("=", ":");
         }
+
         public bool IsStartOfQuotedText()
         {
             return Matches("\"");
         }
+
         public bool IsStartOfTripleQuotedText()
         {
             return Matches("\"\"\"");
         }
+
         public Token PullComment()
         {
             PullRestOfLine();
-            return new Token(TokenKind.Comment);
+            return new Token(TokenKind.Comment, "<comment>");
         }
+
         public Token PullUnquotedKey()
         {
             var sb = new StringBuilder();
@@ -257,10 +284,12 @@ namespace Framework.Configuration.Hocon
 
             return Token.Key((sb.ToString().Trim()));
         }
+
         public bool IsUnquotedKey()
         {
             return (!EoF && !IsStartOfComment() && !NotInUnquotedKey.Contains(Peek()));
         }
+
         public bool IsUnquotedKeyStart()
         {
             return (!EoF && !IsWhitespace() && !IsStartOfComment() && !NotInUnquotedKey.Contains(Peek()));
@@ -275,6 +304,7 @@ namespace Framework.Configuration.Hocon
         {
             return IsWhitespace() || IsStartOfComment();
         }
+
         public Token PullTripleQuotedText()
         {
             var sb = new StringBuilder();
@@ -287,6 +317,7 @@ namespace Framework.Configuration.Hocon
             Take(3);
             return Token.LiteralValue(sb.ToString());
         }
+
         public Token PullQuotedText()
         {
             var sb = new StringBuilder();
@@ -306,6 +337,7 @@ namespace Framework.Configuration.Hocon
             Take();
             return Token.LiteralValue(sb.ToString());
         }
+
         public Token PullQuotedKey()
         {
             var sb = new StringBuilder();
@@ -370,6 +402,7 @@ namespace Framework.Configuration.Hocon
         {
             return (Matches("#", "//"));
         }
+
         public Token PullValue()
         {
             if (IsObjectStart())
@@ -407,6 +440,7 @@ namespace Framework.Configuration.Hocon
             throw new FormatException(
                 "Expected value: Null literal, Array, Quoted Text, Unquoted Text, Triple quoted Text, Object or End of array");
         }
+
         public bool IsSubstitutionStart()
         {
             return Matches("${");
@@ -439,6 +473,7 @@ namespace Framework.Configuration.Hocon
                 Pop();
             }
         }
+
         public Token PullSubstitution()
         {
             var sb = new StringBuilder();
@@ -450,10 +485,12 @@ namespace Framework.Configuration.Hocon
             Take();
             return Token.Substitution(sb.ToString());
         }
+
         public bool IsSpaceOrTab()
         {
             return Matches(" ", "\t");
         }
+
         public bool IsStartSimpleValue()
         {
             if (IsSpaceOrTab())
@@ -464,6 +501,7 @@ namespace Framework.Configuration.Hocon
 
             return false;
         }
+
         public Token PullSpaceOrTab()
         {
             var sb = new StringBuilder();
@@ -489,6 +527,7 @@ namespace Framework.Configuration.Hocon
         {
             return (!EoF && !IsWhitespace() && !IsStartOfComment() && !NotInUnquotedText.Contains(Peek()));
         }
+
         public Token PullSimpleValue()
         {
             if (IsSpaceOrTab())
@@ -498,6 +537,7 @@ namespace Framework.Configuration.Hocon
 
             throw new FormatException("No simple value found");
         }
+
         internal bool IsValue()
         {
             if (IsArrayStart())

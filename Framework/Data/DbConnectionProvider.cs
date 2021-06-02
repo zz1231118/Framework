@@ -42,9 +42,9 @@ namespace Framework.Data
 
         public abstract IDataParameter CreateParameter(string name, object value);
 
-        public abstract IDbCommandStruct CreateCommand(string name, DbCommandMode mode, IEnumerable<SqlExpression> columns = null);
+        public abstract IDbCommandStruct CreateCommand(string name, DbCommandMode mode, IEnumerable<SqlExpression>? columns = null);
 
-        public abstract IDbCommandStruct<T> CreateCommand<T>(string name, DbCommandMode mode, IEnumerable<SqlExpression> columns = null);
+        public abstract IDbCommandStruct<T> CreateCommand<T>(string name, DbCommandMode mode, IEnumerable<SqlExpression>? columns = null);
 
         public IDbConnection Allocate()
         {
@@ -82,7 +82,7 @@ namespace Framework.Data
             _connectionPool.Enqueue(connection);
         }
 
-        public void ExecuteReader(string commandText, CommandType commandType, IEnumerable<IDataParameter> parameters, Action<IDataReader> readProcessor)
+        public void ExecuteReader(string commandText, CommandType commandType, TimeSpan? commandTimeout, IEnumerable<IDataParameter>? parameters, Action<IDataReader> readProcessor)
         {
             if (commandText == null)
                 throw new ArgumentNullException(nameof(commandText));
@@ -93,8 +93,8 @@ namespace Framework.Data
 
             try
             {
-                dbConnection.CheckConnect();
-                using (var reader = dbConnection.ExecuteReader(commandText, commandType, parameters))
+                dbConnection.EnsureConnection();
+                using (var reader = dbConnection.ExecuteReader(commandText, commandType, commandTimeout, parameters))
                 {
                     readProcessor(reader);
                 }
@@ -105,7 +105,7 @@ namespace Framework.Data
             }
         }
 
-        public object ExecuteScalar(string commandText, CommandType commandType = CommandType.Text, IEnumerable<IDataParameter> parameters = null)
+        public object ExecuteScalar(string commandText, CommandType commandType = CommandType.Text, TimeSpan? commandTimeout = null, IEnumerable<IDataParameter>? parameters = null)
         {
             if (commandText == null)
                 throw new ArgumentNullException(nameof(commandText));
@@ -114,8 +114,8 @@ namespace Framework.Data
 
             try
             {
-                dbConnection.CheckConnect();
-                return dbConnection.ExecuteScalar(commandText, commandType, parameters);
+                dbConnection.EnsureConnection();
+                return dbConnection.ExecuteScalar(commandText, commandType, commandTimeout, parameters);
             }
             finally
             {
@@ -123,7 +123,7 @@ namespace Framework.Data
             }
         }
 
-        public T ExecuteScalar<T>(string commandText, CommandType commandType = CommandType.Text, IEnumerable<IDataParameter> parameters = null)
+        public T? ExecuteScalar<T>(string commandText, CommandType commandType = CommandType.Text, TimeSpan? commandTimeout = null, IEnumerable<IDataParameter>? parameters = null)
         {
             if (commandText == null)
                 throw new ArgumentNullException(nameof(commandText));
@@ -132,8 +132,8 @@ namespace Framework.Data
 
             try
             {
-                dbConnection.CheckConnect();
-                return dbConnection.ExecuteScalar<T>(commandText, commandType, parameters);
+                dbConnection.EnsureConnection();
+                return dbConnection.ExecuteScalar<T>(commandText, commandType, commandTimeout, parameters);
             }
             finally
             {
@@ -141,7 +141,7 @@ namespace Framework.Data
             }
         }
 
-        public int ExecuteNonQuery(string commandText, CommandType commandType = CommandType.Text, IEnumerable<IDataParameter> parameters = null)
+        public int ExecuteNonQuery(string commandText, CommandType commandType = CommandType.Text, TimeSpan? commandTimeout = null, IEnumerable<IDataParameter>? parameters = null)
         {
             if (commandText == null)
                 throw new ArgumentNullException(nameof(commandText));
@@ -150,8 +150,8 @@ namespace Framework.Data
 
             try
             {
-                dbConnection.CheckConnect();
-                return dbConnection.ExecuteNonQuery(commandText, commandType, parameters);
+                dbConnection.EnsureConnection();
+                return dbConnection.ExecuteNonQuery(commandText, commandType, commandTimeout, parameters);
             }
             finally
             {
@@ -170,8 +170,8 @@ namespace Framework.Data
 
             try
             {
-                dbConnection.CheckConnect();
-                using (var reader = dbConnection.ExecuteReader(commandStruct.CommandText, parameters: commandStruct.Parameters))
+                dbConnection.EnsureConnection();
+                using (var reader = dbConnection.ExecuteReader(commandStruct.CommandText, CommandType.Text, commandStruct.CommandTimeout, commandStruct.Parameters))
                 {
                     readProcessor(reader);
                 }
@@ -191,8 +191,8 @@ namespace Framework.Data
 
             try
             {
-                dbConnection.CheckConnect();
-                return dbConnection.ExecuteScalar(commandStruct.CommandText, parameters: commandStruct.Parameters);
+                dbConnection.EnsureConnection();
+                return dbConnection.ExecuteScalar(commandStruct.CommandText, CommandType.Text, commandStruct.CommandTimeout, commandStruct.Parameters);
             }
             finally
             {
@@ -200,7 +200,7 @@ namespace Framework.Data
             }
         }
 
-        public T ExecuteScalar<T>(IDbCommandStruct commandStruct)
+        public T? ExecuteScalar<T>(IDbCommandStruct commandStruct)
         {
             if (commandStruct == null)
                 throw new ArgumentNullException(nameof(commandStruct));
@@ -209,8 +209,8 @@ namespace Framework.Data
 
             try
             {
-                dbConnection.CheckConnect();
-                return dbConnection.ExecuteScalar<T>(commandStruct.CommandText, parameters: commandStruct.Parameters);
+                dbConnection.EnsureConnection();
+                return dbConnection.ExecuteScalar<T>(commandStruct.CommandText, CommandType.Text, commandStruct.CommandTimeout, commandStruct.Parameters);
             }
             finally
             {
@@ -227,8 +227,8 @@ namespace Framework.Data
 
             try
             {
-                dbConnection.CheckConnect();
-                return dbConnection.ExecuteNonQuery(commandStruct.CommandText, parameters: commandStruct.Parameters);
+                dbConnection.EnsureConnection();
+                return dbConnection.ExecuteNonQuery(commandStruct.CommandText, CommandType.Text, commandStruct.CommandTimeout, commandStruct.Parameters);
             }
             finally
             {

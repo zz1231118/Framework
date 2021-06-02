@@ -1,18 +1,20 @@
 ﻿namespace Framework.Data.Entry
 {
-    internal class RowEntry
+    public class RowEntry
     {
-        public RowEntry(object row, EntityState state)
+        internal RowEntry(object value, EntityState state)
         {
-            Row = row;
+            Value = value;
             State = state;
         }
 
-        public object Row { get; }
+        public object Value { get; }
 
-        public EntityState State { get; set; }
+        public EntityState State { get; internal set; }
 
-        public void AcceptChanges()
+        public object? Tag { get; set; }
+
+        internal void AcceptChanges()
         {
             State = EntityState.Unchanged;
         }

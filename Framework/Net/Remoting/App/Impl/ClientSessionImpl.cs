@@ -20,21 +20,29 @@ namespace Framework.Net.Remoting.App.Impl
         }
 
         public bool IsConnected => _exSocket.Connected;
+
         public IHostContext Context => _appContext;
-        public Guid HashCode => _exSocket.Guid;
+
+        public Guid Guid => _exSocket.Guid;
+
         public EndPoint LocalEndPoint => _exSocket.LocalEndPoint;
+
         public EndPoint RemoteEndPoint => _exSocket.RemoteEndPoint;
+
         public DateTime LastActivityTime { get; private set; }
+
         public object Command => _command;
 
         public void Refresh()
         {
             LastActivityTime = DateTime.Now;
         }
+
         public void Send(byte[] data, int offset, int count)
         {
             _socketListener.Send(_exSocket, data, offset, count);
         }
+
         public void Close()
         {
             _exSocket.Close();

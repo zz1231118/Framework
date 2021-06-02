@@ -12,14 +12,13 @@ namespace Framework.Data.Command
         private readonly Dictionary<string, IDataParameter> _parameters = new Dictionary<string, IDataParameter>();
         private readonly DbCommandMode _mode;
 
-        public DbCommandStruct(string name, DbCommandMode mode, IEnumerable<SqlExpression> columns = null)
+        public DbCommandStruct(string name, DbCommandMode mode, IEnumerable<SqlExpression>? columns = null)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
             _name = name;
             _mode = mode;
-
             if (columns != null)
             {
                 _columns.AddRange(columns);
@@ -27,14 +26,23 @@ namespace Framework.Data.Command
         }
 
         public string Name => _name;
+
         public int? Top { get; set; }
+
         public DbCommandMode Mode => _mode;
+
         public IList<SqlExpression> Columns => _columns;
+
         public ICollection<IDataParameter> Parameters => _parameters.Values;
-        public SqlExpression Condition { get; set; }
-        public IEnumerable<IDbSortClause> SortOrders { get; set; }
-        public IEnumerable<SqlMemberExpression> Groups { get; set; }
-        public IDbRowOffset RowOffset { get; set; }
+
+        public SqlExpression? Condition { get; set; }
+
+        public IEnumerable<IDbSortClause>? SortOrders { get; set; }
+
+        public IEnumerable<SqlMemberExpression>? Groups { get; set; }
+
+        public IDbRowOffset? RowOffset { get; set; }
+
         public string CommandText
         {
             get
@@ -54,6 +62,7 @@ namespace Framework.Data.Command
                 }
             }
         }
+        public TimeSpan CommandTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         protected abstract string OnParseSelect();
         protected abstract string OnParseUpdate();

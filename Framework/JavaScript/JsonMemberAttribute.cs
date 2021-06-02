@@ -11,14 +11,17 @@ namespace Framework.JavaScript
     [AttributeUsage(AttributeTargets.Property)]
     public class JsonMemberAttribute : Attribute
     {
-        private static readonly ConcurrentDictionary<Type, IJsonConverter> _kvDataFormat = new ConcurrentDictionary<Type, IJsonConverter>();
+        private static readonly ConcurrentDictionary<Type, IJsonConverter> jsonConverters = new ConcurrentDictionary<Type, IJsonConverter>();
+        private static readonly Func<Type, IJsonConverter> jsonConverterFactory = key => (IJsonConverter)Activator.CreateInstance(key, true);
+        private PropertyInfo? propertyInfo;
+        private Type? converterType;
+        private string? name;
 
-        private static readonly Func<Type, IJsonConverter> _dataFormatFactory = key => (IJsonConverter)Activator.CreateInstance(key, true);
-        private string name;
-
+        /// <inheritdoc />
         public JsonMemberAttribute()
         { }
 
+        /// <inheritdoc />
         public JsonMemberAttribute(string name)
         {
             if (name == null)
@@ -27,15 +30,60 @@ namespace Framework.JavaScript
             this.name = name;
         }
 
-        public PropertyInfo PropertyInfo { get; internal set; }
+        /// <inheritdoc />
+        public PropertyInfo PropertyInfo
+        {
+            get => propertyInfo ?? throw new InvalidOperationException("PropertyInfo should not be null");
+            internal set => propertyInfo = value;
+        }
 
-        public bool CanRead => PropertyInfo.CanRead;
+        /// <inheritdoc />
+        public bool CanRead
+        {
+            get 
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
 
-        public bool CanWrite => PropertyInfo.CanWrite;
+                return propertyInfo.CanRead;
+            }
+        }
 
-        public Type PropertyType => PropertyInfo.PropertyType;
+        /// <inheritdoc />
+        public bool CanWrite
+        {
+            get
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
 
-        public Type DeclaringType => PropertyInfo.DeclaringType;
+                return propertyInfo.CanWrite;
+            }
+        }
+
+        /// <inheritdoc />
+        public Type PropertyType
+        {
+            get
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
+
+                return propertyInfo.PropertyType;
+            }
+        }
+
+        /// <inheritdoc />
+        public Type DeclaringType
+        {
+            get
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
+
+                return propertyInfo.DeclaringType;
+            }
+        }
 
         /// <summary>
         /// 显示名
@@ -46,8 +94,10 @@ namespace Framework.JavaScript
             {
                 if (name == null)
                 {
-                    if (PropertyInfo != null)
-                        name = PropertyInfo.Name;
+                    if (propertyInfo == null)
+                        throw new InvalidOperationException("PropertyInfo should not be null");
+
+                    name = propertyInfo.Name;
                 }
                 return name;
             }
@@ -55,14 +105,13 @@ namespace Framework.JavaScript
         }
 
         /// <summary>
-        /// 显示顺序
-        /// </summary>
-        public int ShowIndex { get; set; }
-
-        /// <summary>
         /// DataFormat 对象 Type
         /// </summary>
-        public Type ConverterType { get; set; }
+        public Type? ConverterType
+        { 
+            get => converterType; 
+            set => converterType = value;
+        }
 
         /// <summary>
         /// 获取指定 Type 类型的 IDataFormat 对象
@@ -74,41 +123,43 @@ namespace Framework.JavaScript
             if (!typeof(IJsonConverter).IsAssignableFrom(type))
                 throw new ArgumentException("type not is assignable from IDataFormat");
 
-            return _kvDataFormat.GetOrAdd(type, _dataFormatFactory);
+            return jsonConverters.GetOrAdd(type, jsonConverterFactory);
         }
 
         /// <summary>
         /// 获取指定类型的值
         /// </summary>
         /// <param name="obj">欲获取的对象</param>
-        /// <param name="checkFormat">是否检测 FormatType</param>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.InvalidOperationException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
-        public Json GetValue(object obj, bool checkFormat = true)
+        public Json GetValue(object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
-            if (!CanRead)
+            if (propertyInfo == null)
+                throw new InvalidOperationException("PropertyInfo should not be null");
+            if (!propertyInfo.CanRead)
                 throw new InvalidOperationException("未找到属性设置方法!");
 
-            object result = PropertyInfo.GetValue(obj);
+            var result = propertyInfo.GetValue(obj);
             if (result != null)
             {
-                if (checkFormat && ConverterType != null)
+                if (converterType != null)
                 {
-                    if (!typeof(IJsonConverter).IsAssignableFrom(ConverterType))
+                    if (!typeof(IJsonConverter).IsAssignableFrom(converterType))
                     {
-                        throw new JsonFormatException(string.Format("Type.Name=[{0}] PropertyType.Name=[{1}] FormatType.Name=[{2}] FormatType错误.",
-                            obj.GetType().Name, PropertyType.Name, ConverterType.Name));
+                        throw new JsonFormatException($"Type.Name=[{obj.GetType().Name}] PropertyType.Name=[{PropertyType.Name}] FormatType.Name=[{converterType.Name}] FormatType错误.");
                     }
-                    var dataFormat = GetFormatTarget(ConverterType);
+
+                    var dataFormat = GetFormatTarget(converterType);
                     result = dataFormat.ConvertFrom(result, PropertyType);
                 }
             }
-            return Json.ConvertTo(result);
+
+            return Json.ConvertFrom(result);
         }
 
         /// <summary>
@@ -116,38 +167,40 @@ namespace Framework.JavaScript
         /// </summary>
         /// <param name="obj">欲设置的对象</param>
         /// <param name="value">欲设置的值</param>
-        /// <param name="checkFormat">是否检测 FormatType</param>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.InvalidOperationException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
-        public object SetValue(object obj, Json value, bool checkFormat = true)
+        public object? SetValue(object obj, Json value)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
-            if (!CanWrite)
+            if (propertyInfo == null)
+                throw new InvalidOperationException("PropertyInfo should not be null");
+            if (!propertyInfo.CanWrite)
                 throw new InvalidOperationException("未找到属性设置方法!");
 
-            object result = null;
+            object? result = null;
             if (value != null)
             {
-                if (checkFormat && ConverterType != null)
+                if (converterType != null)
                 {
-                    if (!typeof(IJsonConverter).IsAssignableFrom(ConverterType))
+                    if (!typeof(IJsonConverter).IsAssignableFrom(converterType))
                     {
-                        throw new JsonFormatException(string.Format("Type.Name=[{0}] PropertyType.Name=[{1}] FormatType.Name=[{2}] FormatType错误.",
-                            obj.GetType().Name, PropertyType.Name, ConverterType.Name));
+                        throw new JsonFormatException($"Type.Name=[{obj.GetType().Name}] PropertyType.Name=[{PropertyType.Name}] FormatType.Name=[{converterType.Name}] FormatType错误.");
                     }
-                    var dataFormat = GetFormatTarget(ConverterType);
+
+                    var dataFormat = GetFormatTarget(converterType);
                     result = dataFormat.ConvertTo(value, PropertyType);
                 }
                 else
                 {
-                    result = Json.ChangeType(value, PropertyType);
+                    result = Json.ConvertTo(value, PropertyType);
                 }
             }
-            PropertyInfo.SetValue(obj, result);
+
+            propertyInfo.SetValue(obj, result);
             return result;
         }
     }

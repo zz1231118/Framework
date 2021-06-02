@@ -10,73 +10,6 @@ namespace Framework.Linq
 {
     public static class DbCommandStructExtension
     {
-        public static void Where<T>(this IDbCommandStruct @struct, Expression<Func<T, bool>> expression)
-        {
-            if (@struct == null)
-                throw new ArgumentNullException(nameof(@struct));
-            if (expression == null)
-                throw new ArgumentNullException(nameof(expression));
-
-            int pIndex = 0;
-            @struct.Condition = Accept(@struct, expression.Body, ref pIndex);
-        }
-        public static void OrderBy<T>(this IDbCommandStruct @struct, Expression<Func<T, object>> expression, bool ascending = true)
-        {
-            if (@struct == null)
-                throw new ArgumentNullException(nameof(@struct));
-            if (expression == null)
-                throw new ArgumentNullException(nameof(expression));
-
-            MemberExpression memberExpression;
-            switch (expression.Body)
-            {
-                case MemberExpression other:
-                    memberExpression = other;
-                    break;
-                case UnaryExpression other:
-                    if (other.NodeType == ExpressionType.Convert && other.Operand is MemberExpression m)
-                    {
-                        memberExpression = m;
-                        break;
-                    }
-                    throw new InvalidOperationException("invalid expression");
-                default:
-                    throw new InvalidOperationException("invalid expression");
-            }
-
-            var sortOrders = @struct.SortOrders?.ToList() ?? new List<IDbSortClause>();
-            sortOrders.Add(new DbSortClause(SqlExpression.Member(memberExpression.Member.Name), ascending));
-            @struct.SortOrders = sortOrders.ToArray();
-        }
-        public static void GroupBy<T>(this IDbCommandStruct @struct, Expression<Func<T, object>> expression)
-        {
-            if (@struct == null)
-                throw new ArgumentNullException(nameof(@struct));
-            if (expression == null)
-                throw new ArgumentNullException(nameof(expression));
-
-            MemberExpression memberExpression;
-            switch (expression.Body)
-            {
-                case MemberExpression other:
-                    memberExpression = other;
-                    break;
-                case UnaryExpression other:
-                    if (other.NodeType == ExpressionType.Convert && other.Operand is MemberExpression m)
-                    {
-                        memberExpression = m;
-                        break;
-                    }
-                    throw new InvalidOperationException("invalid expression");
-                default:
-                    throw new InvalidOperationException("invalid expression");
-            }
-
-            var groups = @struct.Groups?.ToList() ?? new List<SqlMemberExpression>();
-            groups.Add(SqlExpression.Member(memberExpression.Member.Name));
-            @struct.Groups = groups.ToArray();
-        }
-
         private static SqlExpression Accept(IDbCommandStruct @struct, Expression expression, ref int pIndex)
         {
             if (expression is BinaryExpression binary)
@@ -95,9 +28,21 @@ namespace Framework.Linq
                     case ExpressionType.GreaterThanOrEqual:
                         return SqlExpression.GreaterThanOrEqual(lexpre, rexpre);
                     case ExpressionType.Equal:
-                        return SqlExpression.Equal(lexpre, rexpre);
+                        switch (rexpre)
+                        {
+                            case SqlConstantExpression constant when constant.Value is null:
+                                return SqlExpression.Is(lexpre, rexpre);
+                            default:
+                                return SqlExpression.Equal(lexpre, rexpre);
+                        }
                     case ExpressionType.NotEqual:
-                        return SqlExpression.NotEqual(lexpre, rexpre);
+                        switch (rexpre)
+                        {
+                            case SqlConstantExpression constant when constant.Value is null:
+                                return SqlExpression.Not(SqlExpression.Is(lexpre, rexpre));
+                            default:
+                                return SqlExpression.NotEqual(lexpre, rexpre);
+                        }
                     case ExpressionType.LessThanOrEqual:
                         return SqlExpression.LessThanOrEqual(lexpre, rexpre);
                     case ExpressionType.LessThan:
@@ -143,6 +88,11 @@ namespace Framework.Linq
             }
             else if (expression is ConstantExpression constant)
             {
+                if (constant.Value == null)
+                {
+                    return SqlExpression.Constant(null);
+                }
+
                 var name = "var" + pIndex++;
                 @struct.AddParameter(name, constant.Value);
                 return SqlExpression.Paramter(name);
@@ -180,6 +130,7 @@ namespace Framework.Linq
 
             throw new ArgumentException();
         }
+
         private static object GetValue(this Expression expression)
         {
             if (expression is ConstantExpression constant)
@@ -196,11 +147,84 @@ namespace Framework.Linq
                 throw new ArgumentException();
             }
         }
+
         private static object GetValue(this System.Reflection.MemberInfo member, object obj, object[] index = null)
         {
-            return member is System.Reflection.FieldInfo
-                ? (member as System.Reflection.FieldInfo).GetValue(obj)
-                : (member as System.Reflection.PropertyInfo).GetValue(obj, index);
+            switch (member)
+            {
+                case System.Reflection.FieldInfo field: return field.GetValue(obj);
+                case System.Reflection.PropertyInfo property: return property.GetValue(obj, index);
+                default: throw new ArgumentException($"unknown member type:{member.GetType().FullName}");
+            }
+        }
+
+        public static void Where<T>(this IDbCommandStruct @struct, Expression<Func<T, bool>> expression)
+        {
+            if (@struct == null)
+                throw new ArgumentNullException(nameof(@struct));
+            if (expression == null)
+                throw new ArgumentNullException(nameof(expression));
+
+            int pIndex = 0;
+            @struct.Condition = Accept(@struct, expression.Body, ref pIndex);
+        }
+
+        public static void OrderBy<T>(this IDbCommandStruct @struct, Expression<Func<T, object>> expression, bool ascending = true)
+        {
+            if (@struct == null)
+                throw new ArgumentNullException(nameof(@struct));
+            if (expression == null)
+                throw new ArgumentNullException(nameof(expression));
+
+            MemberExpression memberExpression;
+            switch (expression.Body)
+            {
+                case MemberExpression other:
+                    memberExpression = other;
+                    break;
+                case UnaryExpression other:
+                    if (other.NodeType == ExpressionType.Convert && other.Operand is MemberExpression m)
+                    {
+                        memberExpression = m;
+                        break;
+                    }
+                    throw new InvalidOperationException("invalid expression");
+                default:
+                    throw new InvalidOperationException("invalid expression");
+            }
+
+            var sortOrders = @struct.SortOrders?.ToList() ?? new List<IDbSortClause>();
+            sortOrders.Add(new DbSortClause(SqlExpression.Member(memberExpression.Member.Name), ascending));
+            @struct.SortOrders = sortOrders.ToArray();
+        }
+
+        public static void GroupBy<T>(this IDbCommandStruct @struct, Expression<Func<T, object>> expression)
+        {
+            if (@struct == null)
+                throw new ArgumentNullException(nameof(@struct));
+            if (expression == null)
+                throw new ArgumentNullException(nameof(expression));
+
+            MemberExpression memberExpression;
+            switch (expression.Body)
+            {
+                case MemberExpression other:
+                    memberExpression = other;
+                    break;
+                case UnaryExpression other:
+                    if (other.NodeType == ExpressionType.Convert && other.Operand is MemberExpression m)
+                    {
+                        memberExpression = m;
+                        break;
+                    }
+                    throw new InvalidOperationException("invalid expression");
+                default:
+                    throw new InvalidOperationException("invalid expression");
+            }
+
+            var groups = @struct.Groups?.ToList() ?? new List<SqlMemberExpression>();
+            groups.Add(SqlExpression.Member(memberExpression.Member.Name));
+            @struct.Groups = groups.ToArray();
         }
 
         struct DbSortClause : IDbSortClause

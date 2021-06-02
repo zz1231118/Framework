@@ -14,18 +14,17 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 对象 到 Json
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
         public Json ConvertFrom(object value, Type conversionType)
         {
             if (value == null)
                 return Json.Null;
-            if (!(value is ICollection<T>))
+            if (value is not ICollection<T> collection)
                 throw new ArgumentException("JsonListFormat 转换异常, 传入的参数类型错误!");
 
-            var collection = value as ICollection<T>;
             var array = new JsonArray();
             lock (collection)
             {
@@ -40,12 +39,12 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// Json 到 对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
-        public object ConvertTo(Json json, Type conversionType)
+        public object? ConvertTo(Json json, Type conversionType)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
@@ -55,15 +54,16 @@ namespace Framework.JavaScript.Converters
                 throw new ArgumentException("JsonListFormat 转换异常,传入的 [Type] 必须是实现了 IList 的类型!");
             if (json == Json.Null)
                 return null;
-            if (!(json is JsonArray))
+            if (json is not JsonArray array)
                 throw new ArgumentException("JsonListFormat 转换异常,传入的 [Json] 类型错误!");
 
-            var collection = JsonUtility.GetUninitializedObject(conversionType) as ICollection<T>;
             var itemType = typeof(T);
-            var array = json as JsonArray;
+            var collection = (ICollection<T>)JsonUtility.GetUninitializedObject(conversionType);
             foreach (var jval in array)
             {
                 var value = JsonDynamicDataConverter.JsonToTarget(jval, itemType) as T;
+                if (value == null) throw new JsonFormatException("item is null");
+
                 collection.Add(value);
             }
 
@@ -75,6 +75,7 @@ namespace Framework.JavaScript.Converters
     /// JsonListDynamicFormat
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TCollection"></typeparam>
     public class JsonDynamicCollectionConverter<T, TCollection> : IJsonConverter
         where T : class
         where TCollection : class, ICollection<T>
@@ -82,18 +83,17 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 对象 到 Json
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
         public Json ConvertFrom(object value, Type type)
         {
             if (value == null)
                 return Json.Null;
-            if (!(value is ICollection<T>))
+            if (value is not ICollection<T> collection)
                 throw new ArgumentException("JsonListFormat 转换异常, 传入的参数类型错误!");
 
-            var collection = value as ICollection<T>;
             var array = new JsonArray();
             lock (collection)
             {
@@ -109,12 +109,12 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// Json 到 对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
-        public object ConvertTo(Json json, Type type)
+        public object? ConvertTo(Json json, Type type)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
@@ -123,15 +123,16 @@ namespace Framework.JavaScript.Converters
 
             if (json == Json.Null)
                 return null;
-            if (!(json is JsonArray))
+            if (json is not JsonArray array)
                 throw new ArgumentException("JsonListFormat 转换异常,传入的 [Json] 类型错误!");
 
-            var collection = JsonUtility.GetUninitializedObject(typeof(TCollection)) as ICollection<T>;
             var itemType = typeof(T);
-            var array = json as JsonArray;
+            var collection = (ICollection<T>)JsonUtility.GetUninitializedObject(typeof(TCollection));
             foreach (var jval in array)
             {
                 var value = JsonDynamicDataConverter<T>.JsonToTarget(jval, itemType) as T;
+                if (value == null) throw new JsonFormatException("item is null");
+
                 collection.Add(value);
             }
 

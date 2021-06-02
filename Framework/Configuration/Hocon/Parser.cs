@@ -4,36 +4,42 @@ using System.Linq;
 
 namespace Framework.Configuration.Hocon
 {
-    public class Parser
+    internal class Parser
     {
-        private readonly List<HoconSubstitution> _substitutions = new List<HoconSubstitution>();
-        private HoconTokenizer _reader;
-        private HoconValue _root;
-        private Func<string, HoconRoot> _includeCallback;
+        private readonly List<HoconSubstitution> substitutions = new List<HoconSubstitution>();
+        private readonly HoconValue _root = new HoconValue();
+        private readonly HoconTokenizer _reader;
+        private readonly Func<string, HoconRoot>? _includeCallback;
 
-        public static HoconRoot Parse(string text, Func<string, HoconRoot> includeCallback)
+        public Parser(HoconTokenizer reader, Func<string, HoconRoot>? includeCallback)
         {
-            return new Parser().ParseText(text, includeCallback);
+            this._reader = reader;
+            this._includeCallback = includeCallback;
         }
 
-        private HoconRoot ParseText(string text, Func<string, HoconRoot> includeCallback)
+        public static HoconRoot Parse(string text, Func<string, HoconRoot>? includeCallback)
         {
-            _includeCallback = includeCallback;
-            _root = new HoconValue();
-            _reader = new HoconTokenizer(text);
+            var reader = new HoconTokenizer(text);
+            return new Parser(reader, includeCallback).Parse();
+        }
+
+        private HoconRoot Parse()
+        {
             _reader.PullWhitespaceAndComments();
             ParseObject(_root, true, "");
 
-            var c = new Config(new HoconRoot(_root, Enumerable.Empty<HoconSubstitution>()));
-            foreach (HoconSubstitution sub in _substitutions)
+            var config = new Config(new HoconRoot(_root, Enumerable.Empty<HoconSubstitution>()));
+            foreach (HoconSubstitution sub in substitutions)
             {
-                HoconValue res = c.GetValue(sub.Path);
+                var res = config.GetValue(sub.Path);
                 if (res == null)
                     throw new FormatException("Unresolved substitution:" + sub.Path);
+
                 sub.ResolvedValue = res;
             }
-            return new HoconRoot(_root, _substitutions);
+            return new HoconRoot(_root, substitutions);
         }
+
         private void ParseObject(HoconValue owner, bool root, string currentPath)
         {
             if (!owner.IsObject())
@@ -46,13 +52,18 @@ namespace Framework.Configuration.Hocon
                 switch (t.Kind)
                 {
                     case TokenKind.Include:
+                        if (_includeCallback == null)
+                        {
+                            throw new InvalidOperationException("include callback is null");
+                        }
+
                         var included = _includeCallback(t.Value);
                         var substitutions = included.Substitutions;
                         foreach (var substitution in substitutions)
                         {
                             substitution.Path = currentPath + "." + substitution.Path;
                         }
-                        _substitutions.AddRange(substitutions);
+                        this.substitutions.AddRange(substitutions);
                         var otherObj = included.Value.GetObject();
                         owner.GetObject().Merge(otherObj);
 
@@ -72,6 +83,7 @@ namespace Framework.Configuration.Hocon
                 }
             }
         }
+
         private void ParseKeyContent(HoconValue value, string currentPath)
         {
             while (!_reader.EoF)
@@ -95,6 +107,7 @@ namespace Framework.Configuration.Hocon
                 }
             }
         }
+
         public void ParseValue(HoconValue owner, string currentPath)
         {
             if (_reader.EoF)
@@ -104,7 +117,6 @@ namespace Framework.Configuration.Hocon
             while (_reader.IsValue())
             {
                 Token t = _reader.PullValue();
-
                 switch (t.Kind)
                 {
                     case TokenKind.EoF:
@@ -114,12 +126,9 @@ namespace Framework.Configuration.Hocon
                         {
                             owner.Clear();
                         }
-                        var lit = new HoconLiteral
-                        {
-                            Value = t.Value
-                        };
-                        owner.AppendValue(lit);
 
+                        var lit = new HoconLiteral(t.Value);
+                        owner.AppendValue(lit);
                         break;
                     case TokenKind.ObjectStart:
                         ParseObject(owner, true, currentPath);
@@ -130,7 +139,7 @@ namespace Framework.Configuration.Hocon
                         break;
                     case TokenKind.Substitute:
                         HoconSubstitution sub = ParseSubstitution(t.Value);
-                        _substitutions.Add(sub);
+                        substitutions.Add(sub);
                         owner.AppendValue(sub);
                         break;
                 }
@@ -142,22 +151,22 @@ namespace Framework.Configuration.Hocon
 
             IgnoreComma();
         }
+
         private void ParseTrailingWhitespace(HoconValue owner)
         {
             Token ws = _reader.PullSpaceOrTab();
             if (ws.Value.Length > 0)
             {
-                var wsLit = new HoconLiteral
-                {
-                    Value = ws.Value,
-                };
+                var wsLit = new HoconLiteral(ws.Value);
                 owner.AppendValue(wsLit);
             }
         }
+
         private static HoconSubstitution ParseSubstitution(string value)
         {
             return new HoconSubstitution(value);
         }
+
         public HoconArray ParseArray(string currentPath)
         {
             var arr = new HoconArray();
@@ -171,6 +180,7 @@ namespace Framework.Configuration.Hocon
             _reader.PullArrayEnd();
             return arr;
         }
+
         private void IgnoreComma()
         {
             if (_reader.IsComma())

@@ -3,23 +3,23 @@ using System.Collections.Generic;
 
 namespace Framework.JavaScript.Converters
 {
+    /// <inheritdoc />
     public class JsonArrayConverter<T> : IJsonConverter
     {
         /// <summary>
         /// 转换到 Json
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
-        /// <exception cref="Framework.Jsons.JsonerializerException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         public Json ConvertFrom(object value, Type conversionType)
         {
             if (value == null)
                 return Json.Null;
-            if (!(value is IEnumerable<T>))
+            if (value is not IEnumerable<T> collection)
                 throw new ArgumentException("JsonArrayConverter 转换异常, 传入的参数类型错误!");
 
-            var collection = value as IEnumerable<T>;
             var array = new JsonArray();
             foreach (var item in collection)
             {
@@ -32,12 +32,12 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 转换到对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonerializerException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
-        public object ConvertTo(Json value, Type conversionType)
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public object? ConvertTo(Json value, Type conversionType)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -45,10 +45,10 @@ namespace Framework.JavaScript.Converters
                 throw new ArgumentNullException(nameof(conversionType));
             if (value == Json.Null)
                 return null;
-            if (!(value is JsonArray jarray))
+            if (value is not JsonArray jarray)
                 throw new InvalidCastException();
 
-            var array = Array.CreateInstance(typeof(T), jarray.Count) as Array;
+            var array = Array.CreateInstance(typeof(T), jarray.Count);
             for (int i = 0; i < jarray.Count; i++)
             {
                 var item = JsonSerializer.Deserialize<T>(jarray[i]);

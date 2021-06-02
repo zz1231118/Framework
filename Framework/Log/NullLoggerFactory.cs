@@ -4,32 +4,18 @@
     {
         public static NullLoggerFactory Instance { get; } = new NullLoggerFactory();
 
-        public void AddProvider(ILoggerProvider provider)
-        { }
-
-        public ILogger CreateLogger(string name)
+        public MessageLogger CreateLogger(Level level)
         {
-            return NullLogger.Instance;
+            return new NullLogger(level);
         }
 
-        sealed class NullLogger : ILogger
+        private sealed class NullLogger : MessageLogger
         {
-            public static NullLogger Instance { get; } = new NullLogger();
-
-            public string Name => null;
-
-            public bool IsEnabled(LogLevel level)
-            {
-                return false;
-            }
-
-            public void Flush()
+            public NullLogger(Level level)
+                : base(level)
             { }
 
-            public void Log(LogLevel level, string format, params object[] args)
-            { }
-
-            public void Dispose()
+            public override void Log(string message)
             { }
         }
     }

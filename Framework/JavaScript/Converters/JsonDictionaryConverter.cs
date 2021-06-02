@@ -11,29 +11,28 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 把指定对象转换到 Json
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
-        /// <exception cref="Framework.Jsons.JsonerializerException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         public Json ConvertFrom(object value, Type conversionType)
         {
             if (value == null)
                 return Json.Null;
             if (conversionType == null)
                 throw new ArgumentNullException("JsonDictionaryFormat 转换异常,参数 [Type] 不能为空");
-            if (!(value is IDictionary))
+            if (value is not IDictionary dictionary)
                 throw new ArgumentException("JsonDictionaryFormat 转换失败 只能转换 IDictionary 类型");
 
             var array = new JsonArray();
-            var kv = value as IDictionary;
-            lock (kv)
+            lock (dictionary)
             {
-                foreach (var key in kv.Keys)
+                foreach (var key in dictionary.Keys)
                 {
                     var json = new JsonObject();
                     json["Key"] = JsonSerializer.Serialize(key);
-                    json["Value"] = JsonSerializer.Serialize(kv[key]);
+                    json["Value"] = JsonSerializer.Serialize(dictionary[key]);
                     array.Add(json);
                 }
             }
@@ -43,12 +42,12 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 把指定 Json 转换到 对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
-        /// <exception cref="Framework.Jsons.JsonerializerException"></exception>
-        public object ConvertTo(Json json, Type conversionType)
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public object? ConvertTo(Json json, Type conversionType)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
@@ -61,21 +60,20 @@ namespace Framework.JavaScript.Converters
             {
                 return null;
             }
-            if (!(json is JsonArray))
+            if (json is not JsonArray array)
             {
                 throw new JsonFormatException("JsonDictionaryFormat 转换失败,传入的参数类型错误");
             }
 
-            var kv = JsonUtility.GetUninitializedObject(conversionType) as IDictionary;
-            var array = json as JsonArray;
+            var dictionary = (IDictionary)JsonUtility.GetUninitializedObject(conversionType);
             foreach (JsonObject jobj in array)
             {
                 var key = JsonSerializer.Deserialize(jobj["Key"], typeof(TKey));
                 var val = JsonSerializer.Deserialize(jobj["Value"], typeof(TValue));
-                kv.Add(key, val);
+                dictionary.Add(key, val);
             }
 
-            return kv;
+            return dictionary;
         }
     }
 }

@@ -270,6 +270,27 @@
             <para>默认：<see cref="F:Framework.Data.EntitySchemaAttributes.Conservatism"/></para>
             </summary>
         </member>
+        <member name="P:Framework.Data.Entry.DbContextOptions.CommandTimeout">
+            <summary>
+            执行超时时长
+            </summary>
+        </member>
+        <member name="P:Framework.Data.Entry.DbContextOptions.ExceptionHandling">
+            <summary>
+            异常处理
+            <para>默认：<see cref="F:Framework.Data.Entry.ExceptionHandling.Interrupt"/></para>
+            </summary>
+        </member>
+        <member name="F:Framework.Data.Entry.ExceptionHandling.Interrupt">
+            <summary>
+            中断
+            </summary>
+        </member>
+        <member name="F:Framework.Data.Entry.ExceptionHandling.Skip">
+            <summary>
+            跳过
+            </summary>
+        </member>
         <member name="P:Framework.Data.IEntitySchema.Tables">
             <summary>
             表集合
@@ -612,9 +633,9 @@
             转换到 Json
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonArrayConverter`1.ConvertTo(Framework.JavaScript.Json,System.Type)">
             <summary>
@@ -622,18 +643,18 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonCollectionConverter`2.ConvertFrom(System.Object,System.Type)">
             <summary>
             转换到 Json
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonCollectionConverter`2.ConvertTo(Framework.JavaScript.Json,System.Type)">
             <summary>
@@ -641,18 +662,18 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonCollectionConverter`1.ConvertFrom(System.Object,System.Type)">
             <summary>
             转换到 Json
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonCollectionConverter`1.ConvertTo(Framework.JavaScript.Json,System.Type)">
             <summary>
@@ -660,9 +681,9 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="T:Framework.JavaScript.Converters.JsonDataConverter`1">
             <summary>
@@ -674,8 +695,8 @@
             对象到 Json
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDataConverter`1.JsonToTarget(Framework.JavaScript.Json,System.Object)">
@@ -684,8 +705,8 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDataConverter`1.JsonToTarget(Framework.JavaScript.Json,System.Type)">
@@ -694,7 +715,7 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDataConverter`1.JsonToTarget``1(Framework.JavaScript.Json)">
@@ -703,23 +724,23 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDataConverter`1.ConvertFrom(System.Object,System.Type)">
             <summary>
             序列化指定对象
             </summary>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDataConverter`1.ConvertTo(Framework.JavaScript.Json,System.Type)">
             <summary>
             反序列化对象
             </summary>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="T:Framework.JavaScript.Converters.JsonDictionaryConverter`2">
             <summary>
@@ -732,9 +753,9 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDictionaryConverter`2.ConvertTo(Framework.JavaScript.Json,System.Type)">
             <summary>
@@ -742,9 +763,9 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="T:Framework.JavaScript.Converters.JsonDynamicCollectionConverter`1">
             <summary>
@@ -757,8 +778,8 @@
             对象 到 Json
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDynamicCollectionConverter`1.ConvertTo(Framework.JavaScript.Json,System.Type)">
@@ -767,8 +788,8 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="T:Framework.JavaScript.Converters.JsonDynamicCollectionConverter`2">
@@ -776,14 +797,15 @@
             JsonListDynamicFormat
             </summary>
             <typeparam name="T"></typeparam>
+            <typeparam name="TCollection"></typeparam>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDynamicCollectionConverter`2.ConvertFrom(System.Object,System.Type)">
             <summary>
             对象 到 Json
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDynamicCollectionConverter`2.ConvertTo(Framework.JavaScript.Json,System.Type)">
@@ -792,8 +814,8 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="T:Framework.JavaScript.Converters.JsonDynamicDataConverter">
@@ -805,8 +827,8 @@
             <summary>
             对象 转换到 Json
             </summary>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDynamicDataConverter.JsonToTarget(Framework.JavaScript.Json,System.Object)">
@@ -815,8 +837,8 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDynamicDataConverter.JsonToTarget(Framework.JavaScript.Json,System.Type)">
@@ -825,28 +847,43 @@
             </summary>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDynamicDataConverter.ConvertFrom(System.Object,System.Type)">
             <summary>
             序列化指定对象
             </summary>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Converters.JsonDynamicDataConverter.ConvertTo(Framework.JavaScript.Json,System.Type)">
             <summary>
             反序列化对象
             </summary>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
-            <exception cref="!:Framework.Jsons.JsonerializerException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
         </member>
         <member name="T:Framework.JavaScript.Converters.JsonDynamicDataConverter`1">
             <summary>
             JsonDynamicData
+            </summary>
+        </member>
+        <member name="T:Framework.JavaScript.EnumExtension">
+            <summary>
+            Enum 的扩展
+            </summary>
+        </member>
+        <member name="M:Framework.JavaScript.EnumExtension.ToValue(System.Enum)">
+            <summary>
+            Enum 到 对象
+            </summary>
+        </member>
+        <member name="M:Framework.JavaScript.EnumExtension.ToEnum(System.Type,System.Object)">
+            <summary>
+            对象到 Enum
             </summary>
         </member>
         <member name="T:Framework.JavaScript.Json">
@@ -1081,27 +1118,27 @@
             <summary>
             把未知类型转换成 Json
             </summary>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Json.ConvertTo``1(System.Object)">
             <summary>
             把未知类型转换成 Json
             </summary>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Json.ChangeType(Framework.JavaScript.Json,System.Type)">
             <summary>
             把 Json 转换成 指定类型的对象
             </summary>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Json.ChangeType``1(Framework.JavaScript.Json)">
             <summary>
             把 Json 转换成 指定类型的对象
             </summary>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Json.Parse(System.String)">
             <summary>
@@ -1110,7 +1147,7 @@
             <returns>返回解析的 Json</returns>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsoncriptException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Json.Parse``1(System.String)">
             <summary>
@@ -1119,7 +1156,7 @@
             <returns>返回解析的 Json</returns>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsoncriptException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.Json.Parse(System.Byte[])">
             <summary>
@@ -1205,7 +1242,7 @@
             <summary>
             将指定样式和区域性特定格式的 Json 的字节集表示形式转换为它的等效 Json。一个指示转换是否成功的返回值。
             </summary>
-            <param name="bytes"></param>
+            <param name="data"></param>
             <param name="json"></param>
             <returns></returns>
         </member>
@@ -1298,7 +1335,7 @@
             把元素插入到指定索引处
             </summary>
             <param name="index"></param>
-            <param name="item"></param>
+            <param name="value"></param>
             <exception cref="T:System.ArgumentNullException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonArray.RemoveAt(System.Int32)">
@@ -1311,7 +1348,7 @@
             <summary>
             把对象添加到列表的结尾
             </summary>
-            <param name="item"></param>
+            <param name="value"></param>
             <exception cref="T:System.ArgumentNullException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonArray.Clear">
@@ -1323,7 +1360,7 @@
             <summary>
             确定指定项是否存在
             </summary>
-            <param name="item"></param>
+            <param name="value"></param>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.JsonArray.CopyTo(Framework.JavaScript.Json[],System.Int32)">
@@ -1339,7 +1376,7 @@
             <summary>
             移除指定项
             </summary>
-            <param name="item"></param>
+            <param name="value"></param>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.JsonArray.GetEnumerator">
@@ -1476,7 +1513,7 @@
             <summary>
             移除特定对象的第一个匹配项
             </summary>
-            <param name="item"></param>
+            <param name="value"></param>
             <returns></returns>
         </member>
         <member name="M:Framework.JavaScript.JsonBinary.GetEnumerator">
@@ -1525,6 +1562,29 @@
             Json 异常 构造函数
             </summary>
         </member>
+        <member name="T:Framework.JavaScript.JsonExtension">
+            <summary>
+            JsonValue 扩展
+            </summary>
+        </member>
+        <member name="M:Framework.JavaScript.JsonExtension.ToJsonValue(System.Enum)">
+            <summary>
+            把枚举转换成 JsonValue
+            </summary>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="M:Framework.JavaScript.JsonExtension.ToEnum(Framework.JavaScript.JsonValue,System.Type)">
+            <summary>
+            把 JsonValue 转换成指定 枚举 类型
+            </summary>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="M:Framework.JavaScript.JsonExtension.ToEnum``1(Framework.JavaScript.JsonValue)">
+            <summary>
+            把 JsonValue 转换成指定 枚举 类型
+            </summary>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
         <member name="T:Framework.JavaScript.JsonFormatException">
             <summary>
             DataFromat 异常
@@ -1560,6 +1620,7 @@
             获取指定类型的所有 JsonMemberAttribute 标记成员
             </summary>
             <param name="type"></param>
+            <param name="inherit"></param>
             <returns></returns>
             <exception cref="T:System.ArgumentNullException"></exception>
         </member>
@@ -1611,29 +1672,27 @@
             获取指定 Type 类型的 IDataFormat 对象
             </summary>
         </member>
-        <member name="M:Framework.JavaScript.JsonMemberAttribute.GetValue(System.Object,System.Boolean)">
+        <member name="M:Framework.JavaScript.JsonMemberAttribute.GetValue(System.Object)">
             <summary>
             获取指定类型的值
             </summary>
             <param name="obj">欲获取的对象</param>
-            <param name="checkFormat">是否检测 FormatType</param>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.InvalidOperationException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
-        <member name="M:Framework.JavaScript.JsonMemberAttribute.SetValue(System.Object,Framework.JavaScript.Json,System.Boolean)">
+        <member name="M:Framework.JavaScript.JsonMemberAttribute.SetValue(System.Object,Framework.JavaScript.Json)">
             <summary>
             设置指定类型的值
             </summary>
             <param name="obj">欲设置的对象</param>
             <param name="value">欲设置的值</param>
-            <param name="checkFormat">是否检测 FormatType</param>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.InvalidOperationException"></exception>
-            <exception cref="!:Framework.Jsons.JsonFormatException"></exception>
-            <exception cref="!:Framework.Jsons.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <returns></returns>
         </member>
         <member name="T:Framework.JavaScript.JsonObject">
@@ -1664,7 +1723,7 @@
             <summary>
             JsonObject 构造函数
             </summary>
-            <param name="value"></param>
+            <param name="collection"></param>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
         </member>
@@ -1672,7 +1731,7 @@
             <summary>
             JsonObject 构造函数
             </summary>
-            <param name="value"></param>
+            <param name="collection"></param>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
         </member>
@@ -1781,11 +1840,12 @@
             把 Bson 形式的 byte[] 转换到 Bson
             </summary>
             <param name="data"></param>
-            <param name="encoding"></param>
+            <param name="offset"></param>
+            <param name="count"></param>
             <returns></returns>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsoncriptException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonParser.Parse(System.String)">
             <summary>
@@ -1795,7 +1855,7 @@
             <returns>返回解析的 Json</returns>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
-            <exception cref="!:Framework.Jsons.JsoncriptException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="T:Framework.JavaScript.JsonSerializer">
             <summary>
@@ -1806,34 +1866,34 @@
             <summary>
             序列化
             </summary>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <return>序列化的 Json</return>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.Serialize``1(System.Object,System.Boolean)">
             <summary>
             序列化
             </summary>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.ListSerialize(System.Collections.IList)">
             <summary>
             序列化 IList
             </summary>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.DictionarySerialize(System.Collections.IDictionary)">
             <summary>
             序列化 IDictionary
             </summary>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.DataSerialize(System.Object)">
             <summary>
@@ -1860,60 +1920,60 @@
             反序列化
             </summary>
             <exception cref="T:System.ArgumentNullException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.Deserialize``1(Framework.JavaScript.Json,System.Object,System.Boolean)">
             <summary>
             反序列化
             </summary>
             <exception cref="T:System.ArgumentNullException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.Deserialize(Framework.JavaScript.Json,System.Type,System.Boolean)">
             <summary>
             反序列化
             </summary>
             <exception cref="T:System.ArgumentNullException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.Deserialize``1(Framework.JavaScript.Json,System.Boolean)">
             <summary>
             反序列化
             </summary>
             <exception cref="T:System.ArgumentNullException"></exception>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.CollectionDeserialize(Framework.JavaScript.JsonArray,System.Collections.IList)">
             <summary>
             反序列化 IList
             </summary>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.ClassDeserialize(Framework.JavaScript.JsonObject,System.Object)">
             <summary>
             反序列化 类
             </summary>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.DynamicDataDeserialize(Framework.JavaScript.JsonObject,System.Type)">
             <summary>
             反序列化 动态类
             </summary>
+            <exception cref="T:Framework.JavaScript.JsonException"></exception>
             <exception cref="T:Framework.JavaScript.JsonFormatException"></exception>
             <exception cref="T:Framework.JavaScript.JsonerializerException"></exception>
-            <exception cref="T:Framework.JavaScript.JsonException"></exception>
         </member>
         <member name="M:Framework.JavaScript.JsonSerializer.NoCharacteristicDeserialize(Framework.JavaScript.JsonObject,System.Type)">
             <summary>
@@ -1947,17 +2007,17 @@
             Json 异常 构造函数
             </summary>
         </member>
-        <member name="T:Framework.JavaScript.Jsonetting">
+        <member name="T:Framework.JavaScript.JsonSetting">
             <summary>
             Json 设置
             </summary>
         </member>
-        <member name="F:Framework.JavaScript.Jsonetting.DefaultEncoding">
+        <member name="F:Framework.JavaScript.JsonSetting.DefaultEncoding">
             <summary>
             默认编码
             </summary>
         </member>
-        <member name="P:Framework.JavaScript.Jsonetting.Encoding">
+        <member name="P:Framework.JavaScript.JsonSetting.Encoding">
             <summary>
             Json 编码
             </summary>
@@ -2244,6 +2304,12 @@
             JsonValue 值
             </summary>
         </member>
+        <member name="M:Framework.JavaScript.JsonValue.op_Equality(Framework.JavaScript.JsonValue,Framework.JavaScript.JsonValue)">
+            <inheritdoc />
+        </member>
+        <member name="M:Framework.JavaScript.JsonValue.op_Inequality(Framework.JavaScript.JsonValue,Framework.JavaScript.JsonValue)">
+            <inheritdoc />
+        </member>
         <member name="M:Framework.JavaScript.JsonValue.op_Implicit(System.Boolean)~Framework.JavaScript.JsonValue">
             <inheritdoc />
         </member>
@@ -2470,43 +2536,35 @@
             确定指定的 System.Object 是否等于当前的 System.Object。
             </summary>
         </member>
-        <member name="T:Framework.JavaScript.EnumExtension">
+        <member name="T:Framework.Linq.MemberExtension">
             <summary>
-            Enum 的扩展
+            MemberInfo 的扩展对象
             </summary>
         </member>
-        <member name="M:Framework.JavaScript.EnumExtension.ToValue(System.Enum)">
+        <member name="M:Framework.Linq.MemberExtension.IsDefined(System.Reflection.MemberInfo,System.Type)">
             <summary>
-            Enum 到 对象
+            指定特性是否定义
             </summary>
+            <param name="source">成员</param>
+            <param name="attributeType">特性类型</param>
+            <returns></returns>
         </member>
-        <member name="M:Framework.JavaScript.EnumExtension.ToEnum(System.Type,System.Object)">
+        <member name="M:Framework.Linq.MemberExtension.IsDefined``1(System.Reflection.MemberInfo,System.Boolean)">
             <summary>
-            对象到 Enum
+            指定特性是否定义
             </summary>
+            <typeparam name="T">要搜索的属性类型</typeparam>
+            <param name="source">成员</param>
+            <param name="inherit">是否搜索此成员的继承链以查找特性</param>
+            <returns></returns>
         </member>
-        <member name="T:Framework.JavaScript.JsonValueExpand">
+        <member name="M:Framework.Linq.MemberExtension.IsDefined``1(System.Reflection.MemberInfo)">
             <summary>
-            JsonValue 扩展
+            指定特性是否定义
             </summary>
-        </member>
-        <member name="M:Framework.JavaScript.JsonValueExpand.ToJsonValue(System.Enum)">
-            <summary>
-            把枚举转换成 JsonValue
-            </summary>
-            <exception cref="T:System.ArgumentNullException"></exception>
-        </member>
-        <member name="M:Framework.JavaScript.JsonValueExpand.ToEnum(Framework.JavaScript.JsonValue,System.Type)">
-            <summary>
-            把 JsonValue 转换成指定 枚举 类型
-            </summary>
-            <exception cref="T:System.ArgumentNullException"></exception>
-        </member>
-        <member name="M:Framework.JavaScript.JsonValueExpand.ToEnum``1(Framework.JavaScript.JsonValue)">
-            <summary>
-            把 JsonValue 转换成指定 枚举 类型
-            </summary>
-            <exception cref="T:System.ArgumentNullException"></exception>
+            <typeparam name="T">要搜索的属性类型</typeparam>
+            <param name="source">成员</param>
+            <returns></returns>
         </member>
         <member name="T:Framework.Linq.TypeExtension">
             <summary>
@@ -2524,6 +2582,26 @@
             是否是匿名类
             </summary>
         </member>
+        <member name="P:Framework.Log.FileLoggerFactory.BaseDirectory">
+            <summary>
+            保存的基础目录
+            </summary>
+        </member>
+        <member name="P:Framework.Log.FileLoggerFactory.Encoding">
+            <summary>
+            编码
+            </summary>
+        </member>
+        <member name="P:Framework.Log.FileLoggerFactory.MaxFileLength">
+            <summary>
+            最大文件大小
+            </summary>
+        </member>
+        <member name="P:Framework.Log.FileLoggerFactory.MaxCacheCount">
+            <summary>
+            最大缓存数
+            </summary>
+        </member>
         <member name="T:Framework.Log.ILogger">
             <summary>
             ILogger 接口
@@ -2534,57 +2612,40 @@
             获取 Log 名称
             </summary>
         </member>
-        <member name="M:Framework.Log.ILogger.IsEnabled(Framework.Log.LogLevel)">
-            <summary>
-            是否可用
-            </summary>
-            <param name="level"></param>
-            <returns></returns>
-        </member>
-        <member name="M:Framework.Log.ILogger.Flush">
-            <summary>
-            刷新缓存
-            </summary>
-        </member>
-        <member name="M:Framework.Log.ILogger.Log(Framework.Log.LogLevel,System.String,System.Object[])">
+        <member name="M:Framework.Log.ILogger.Log(Framework.Log.Level,System.String,System.Object[])">
             <summary>
             写出 Log
             </summary>
             <param name="level">消息等级</param>
-            <param name="format">符合格式字符串</param>
+            <param name="format">对象</param>
             <param name="args">一个对象数组，其中包含零个或多个要设置格式的对象。</param>
         </member>
-        <member name="P:Framework.Log.LoggerSetting.Encoding">
-            <summary>
-            编码
-            </summary>
-        </member>
-        <member name="P:Framework.Log.LoggerSetting.BaseDirectory">
-            <summary>
-            存放Log 的文件夹全名
-            </summary>
-        </member>
-        <member name="P:Framework.Log.LoggerSetting.MaximumFileLength">
-            <summary>
-            最大文件大小
-            </summary>
-        </member>
-        <member name="P:Framework.Log.LoggerSetting.MaximumCacheMessageCount">
-            <summary>
-            最大缓存数
-            </summary>
-        </member>
-        <member name="P:Framework.Log.LoggerSetting.MaximumFileCacheMessageCount">
-            <summary>
-            最文件缓存大缓存数
-            </summary>
-        </member>
-        <member name="P:Framework.Log.LoggerSetting.IsAutoFlush">
+        <member name="P:Framework.Log.ILoggerConfiguration.IsAutoFlush">
             <summary>
             自动刷新
             </summary>
         </member>
-        <member name="P:Framework.Log.LoggerSetting.FlushInterval">
+        <member name="P:Framework.Log.ILoggerConfiguration.FlushInterval">
+            <summary>
+            刷新间隔
+            </summary>
+        </member>
+        <member name="T:Framework.Log.LoggerConfiguration">
+            <summary>
+            Logger 配置
+            </summary>
+        </member>
+        <member name="F:Framework.Log.LoggerConfiguration.Default">
+            <summary>
+            默认配置
+            </summary>
+        </member>
+        <member name="P:Framework.Log.LoggerConfiguration.IsAutoFlush">
+            <summary>
+            自动刷新
+            </summary>
+        </member>
+        <member name="P:Framework.Log.LoggerConfiguration.FlushInterval">
             <summary>
             刷新间隔
             </summary>
@@ -2631,7 +2692,7 @@
             <summary>
             Request
             </summary>
-            <param name="command"></param>
+            <param name="method"></param>
             <param name="args"></param>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
@@ -2643,7 +2704,7 @@
             Request
             </summary>
             <typeparam name="T"></typeparam>
-            <param name="command"></param>
+            <param name="method"></param>
             <param name="args"></param>
             <exception cref="T:System.ArgumentException"></exception>
             <exception cref="T:System.ArgumentNullException"></exception>
@@ -2846,7 +2907,7 @@
             Connected event
             </summary>
         </member>
-        <member name="E:Framework.Net.Sockets.SocketListener.DataReceived">
+        <member name="E:Framework.Net.Sockets.SocketListener.Received">
             <summary>
             DataReceived event
             </summary>
@@ -2857,10 +2918,16 @@
             </summary>
         </member>
         <member name="M:Framework.Net.Sockets.SocketListener.CheckDisposed">
-            <inheritdoc />
+            <summary>
+            Check object disposed.
+            </summary>
+            <exception cref="T:System.ObjectDisposedException" />
         </member>
         <member name="M:Framework.Net.Sockets.SocketListener.Dispose(System.Boolean)">
-            <inheritdoc />
+            <summary>
+            Dispose
+            </summary>
+            <param name="disposing"></param>
         </member>
         <member name="M:Framework.Net.Sockets.SocketListener.Start">
             <summary>
@@ -2887,6 +2954,7 @@
             <exception cref="T:System.ArgumentNullException" />
             <exception cref="T:System.ArgumentOutOfRangeException" />
             <exception cref="T:System.Net.Sockets.SocketException" />
+            <exception cref="T:System.ObjectDisposedException" />
         </member>
         <member name="M:Framework.Net.Sockets.SocketListener.Send(Framework.Net.Sockets.ExSocket,System.Byte[],System.Int32)">
             <summary>
@@ -2896,6 +2964,9 @@
             <param name="data"></param>
             <param name="offset"></param>
             <exception cref="T:System.ArgumentNullException" />
+            <exception cref="T:System.ArgumentOutOfRangeException" />
+            <exception cref="T:System.Net.Sockets.SocketException" />
+            <exception cref="T:System.ObjectDisposedException" />
         </member>
         <member name="M:Framework.Net.Sockets.SocketListener.Send(Framework.Net.Sockets.ExSocket,System.Byte[])">
             <summary>
@@ -2904,6 +2975,9 @@
             <param name="socket"></param>
             <param name="data"></param>
             <exception cref="T:System.ArgumentNullException" />
+            <exception cref="T:System.ArgumentOutOfRangeException" />
+            <exception cref="T:System.Net.Sockets.SocketException" />
+            <exception cref="T:System.ObjectDisposedException" />
         </member>
         <member name="M:Framework.Net.Sockets.SocketListener.Dispose">
             <summary>
@@ -3036,14 +3110,14 @@
             Connected event
             </summary>
         </member>
+        <member name="E:Framework.Net.Sockets.TcpClient.Received">
+            <summary>
+            DataReceived event
+            </summary>
+        </member>
         <member name="E:Framework.Net.Sockets.TcpClient.Disconnected">
             <summary>
             Disconnected event
-            </summary>
-        </member>
-        <member name="E:Framework.Net.Sockets.TcpClient.DataReceived">
-            <summary>
-            DataReceived event
             </summary>
         </member>
         <member name="M:Framework.Net.Sockets.TcpClient.Connect(System.Net.EndPoint)">
@@ -3329,6 +3403,91 @@
         <member name="P:Framework.Statistics.SocketListenerStatistics.ReceiveConcurrencyCount">
             <summary>
             Receive concurrency count
+            </summary>
+        </member>
+        <member name="P:Framework.Statistics.SocketListenerStatistics.SendLength">
+            <summary>
+            Send byte length
+            </summary>
+        </member>
+        <member name="P:Framework.Statistics.SocketListenerStatistics.ReceiveLength">
+            <summary>
+            Receive byte length
+            </summary>
+        </member>
+        <member name="T:Framework.Threading.CompletionSource`1">
+            <summary>
+            完成来源
+            </summary>
+            <typeparam name="T">结果模板</typeparam>
+        </member>
+        <member name="P:Framework.Threading.CompletionSource`1.IsCompleted">
+            <summary>
+            是否已完成
+            </summary>
+        </member>
+        <member name="P:Framework.Threading.CompletionSource`1.IsFaulted">
+            <summary>
+            是否已异常
+            </summary>
+        </member>
+        <member name="P:Framework.Threading.CompletionSource`1.IsCancelled">
+            <summary>
+            是否已被取消
+            </summary>
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.GetResult(System.TimeSpan)">
+            <summary>
+            获取结果
+            </summary>
+            <param name="timeout">超时时长</param>
+            <returns></returns>
+            <exception cref="T:System.TimeoutException" />
+            <exception cref="T:System.OperationCanceledException" />
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.GetResult">
+            <summary>
+            获取结果
+            </summary>
+            <returns></returns>
+            <exception cref="T:System.TimeoutException" />
+            <exception cref="T:System.OperationCanceledException" />
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.TrySetResult(`0)">
+            <summary>
+            尝试设置结果
+            </summary>
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.TrySetException(System.Exception)">
+            <summary>
+            尝试设置异常
+            </summary>
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.TrySetCanceled">
+            <summary>
+            尝试设置取消
+            </summary>
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.SetResult(`0)">
+            <summary>
+            设置结果
+            </summary>
+            <param name="result">结果值</param>
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.SetException(System.Exception)">
+            <summary>
+            设置异常
+            </summary>
+            <param name="exception">异常</param>
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.SetCanceled">
+            <summary>
+            设置取消
+            </summary>
+        </member>
+        <member name="M:Framework.Threading.CompletionSource`1.Dispose">
+            <summary>
+            释放
             </summary>
         </member>
         <member name="P:Framework.TypeAttribute.ReflectedType">

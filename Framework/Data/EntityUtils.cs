@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using Framework.Data.MsSql;
 using Framework.Linq;
@@ -12,35 +11,6 @@ namespace Framework.Data
 {
     public static class EntityUtils
     {
-        public static EntityTableAttribute GetEntityTableAttribute(Type type, bool inherit = false)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            return ReflexHelper.InternalGetTypeAttribute<EntityTableAttribute>(type, inherit);
-        }
-        public static EntityColumnAttribute GetEntityColumnAttribute(PropertyInfo propertyInfo, bool inherit = false)
-        {
-            if (propertyInfo == null)
-                throw new ArgumentNullException(nameof(propertyInfo));
-
-            return ReflexHelper.InternalGetPropertyAttribute<EntityColumnAttribute>(propertyInfo, inherit);
-        }
-        public static EntityColumnAttribute[] GetEntityColumnAttributes(Type type, bool inherit = false)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            var resultList = new List<EntityColumnAttribute>();
-            foreach (var propertyInfo in ReflexHelper.GetPropertys(type))
-            {
-                var att = ReflexHelper.InternalGetPropertyAttribute<EntityColumnAttribute>(propertyInfo, inherit);
-                if (att != null)
-                    resultList.Add(att);
-            }
-            return resultList.ToArray();
-        }
-
         public static DataTable CreateDataTable(IEntitySchema view)
         {
             if (view == null)
@@ -49,7 +19,7 @@ namespace Framework.Data
             DataTable table = new DataTable();
             foreach (var column in view.Columns.OrderByDescending(p => p.IsPrimary).ThenBy(p => p.Order))
             {
-                if (column.Model == ColumnModel.ReadOnly || column.IsIdentity)
+                if (column.Mode == ColumnMode.ReadOnly || column.IsIdentity)
                     continue;
 
                 var tType = ConvertToType(column.PropertyType);
@@ -57,7 +27,8 @@ namespace Framework.Data
             }
             return table;
         }
-        public static void AddRowToTable(DataTable table, object obj, IEntitySchema view = null)
+
+        public static void AddRowToTable(DataTable table, object obj, IEntitySchema? view = null)
         {
             if (table == null)
                 throw new ArgumentNullException(nameof(table));
@@ -66,16 +37,16 @@ namespace Framework.Data
 
             if (view == null)
             {
-                var pType = obj.GetType();
-                if (!EntitySchemaManager.TryGetSchema(pType, out view))
+                var type = obj.GetType();
+                if (!EntitySchemaManager.TryGetSchema(type, out view))
                 {
-                    view = EntitySchemaManager.LoadEntity(pType);
+                    view = EntitySchemaManager.LoadEntity(type);
                 }
             }
             var row = table.NewRow();
             foreach (var column in view.Columns)
             {
-                if (column.Model == ColumnModel.ReadOnly)
+                if (column.Mode == ColumnMode.ReadOnly)
                     continue;
 
                 var value = column.GetValue(obj);
@@ -83,6 +54,7 @@ namespace Framework.Data
             }
             table.Rows.Add(row);
         }
+
         public static Type ConvertToType(Type type)
         {
             if (type == null)
@@ -101,6 +73,7 @@ namespace Framework.Data
 
             return typeof(string);
         }
+
         public static SqlDbType ConvertToSqlType(Type type)
         {
             if (type == null)
@@ -141,6 +114,7 @@ namespace Framework.Data
 
             throw new Exception("[" + type.Name + "] can't change to SqlType");
         }
+
         public static string ConvertToDbType(Type type)
         {
             if (type == null)
@@ -260,7 +234,7 @@ namespace Framework.Data
 
             foreach (var column in columns.OrderByDescending(p => p.IsPrimary).ThenBy(p => p.Order))
             {
-                if (column.Model == ColumnModel.ReadOnly)
+                if (column.Mode == ColumnMode.ReadOnly)
                     continue;
 
                 builder.AppendFormat("  [{0}] {1}", column.Name, MsSqlHelper.GetDbTypeString(column));
@@ -361,7 +335,7 @@ namespace Framework.Data
             builder.AppendFormat("{0} Procedure [dbo].[Insert{1}]", operate.ToString(), view.Name);
             builder.AppendLine();
             var viewColumns = view.Columns;
-            var viewColumnList = viewColumns.Where(p => p.Model != ColumnModel.ReadOnly && !p.IsIdentity).ToList();
+            var viewColumnList = viewColumns.Where(p => p.Mode != ColumnMode.ReadOnly && !p.IsIdentity).ToList();
             if (viewColumnList.Count > 1)
             {
                 var firstColumn = viewColumnList.First();
@@ -388,7 +362,7 @@ namespace Framework.Data
             foreach (var table in view.Tables)
             {
                 var aryTableColumn = table.Columns;
-                var tableColumnList = aryTableColumn.Where(p => p.CanRead && p.Model != ColumnModel.ReadOnly && !p.IsIdentity).ToList();
+                var tableColumnList = aryTableColumn.Where(p => p.CanRead && p.Mode != ColumnMode.ReadOnly && !p.IsIdentity).ToList();
                 if (tableColumnList.Count > 0)
                 {
                     var firstColumn = tableColumnList.First();
@@ -426,7 +400,7 @@ namespace Framework.Data
             builder.AppendFormat("{0} Procedure [dbo].[Update{1}]", operate.ToString(), view.Name);
             builder.AppendLine();
             var viewColumns = view.Columns;
-            var validColumns = viewColumns.Where(p => p.Model != ColumnModel.ReadOnly).ToList();
+            var validColumns = viewColumns.Where(p => p.Mode != ColumnMode.ReadOnly).ToList();
             if (validColumns.Count(p => p.IsPrimary) != 1)
             {
                 throw new ArgumentException("view primary error!");
@@ -496,34 +470,33 @@ namespace Framework.Data
             builder.AppendLine("Begin");
             builder.AppendLine("  Set NoCount ON;");
             builder.AppendLine();
-            var builderColumn = new StringBuilder();
+            var columnBuilder = new StringBuilder();
             foreach (var table in view.Tables)
             {
                 builder.AppendFormat("  Insert Into [dbo].[{0}]", table.Name);
                 builder.AppendLine();
                 builder.Append("  (");
-                var aryColumn = table.Columns;
-                var columnList = aryColumn.Where(p => p.Model != ColumnModel.ReadOnly && !p.IsIdentity).ToList();
-                if (columnList.Count > 0)
+                var columns = table.Columns.Where(p => p.Mode != ColumnMode.ReadOnly && !p.IsIdentity).ToList();
+                if (columns.Count > 0)
                 {
-                    var firstColumn = columnList.First();
-                    builderColumn.AppendFormat("[{0}]", firstColumn.Name);
-                }
-                for (int i = 1; i < columnList.Count; i++)
-                {
-                    var column = columnList[i];
-                    builderColumn.AppendLine();
-                    builderColumn.AppendFormat("  ,[{0}]", column.Name);
+                    var column = columns.First();
+                    columnBuilder.AppendFormat("[{0}]", column.Name);
+                    for (int i = 1; i < columns.Count; i++)
+                    {
+                        column = columns[i];
+                        columnBuilder.AppendLine();
+                        columnBuilder.AppendFormat("  ,[{0}]", column.Name);
+                    }
                 }
 
-                builder.Append(builderColumn.ToString());
+                builder.Append(columnBuilder.ToString());
                 builder.AppendLine();
                 builder.Append("  ) Select ");
-                builder.AppendLine(builderColumn.ToString());
+                builder.AppendLine(columnBuilder.ToString());
                 builder.AppendFormat("  From @{0}Type;", view.Name);
                 builder.AppendLine();
                 builder.AppendLine();
-                builderColumn.Clear();
+                columnBuilder.Clear();
             }
 
             builder.AppendLine("End");
@@ -547,7 +520,7 @@ namespace Framework.Data
                 builder.AppendLine();
                 builder.Append("  Set ");
                 var aryColumn = table.Columns;
-                var columnList = aryColumn.Where(p => p.Model != ColumnModel.ReadOnly).ToList();
+                var columnList = aryColumn.Where(p => p.Mode != ColumnMode.ReadOnly).ToList();
                 if (columnList.Count(p => p.IsPrimary) != 1)
                 {
                     throw new ArgumentException(string.Format("table [{0}] primary error!", table.Name));
@@ -615,7 +588,7 @@ namespace Framework.Data
             builder.AppendFormat("Where [object_id] = Object_Id('[{0}]')", name);
             builder.AppendLine();
             builder.Append("Order By [columns].[column_id]");
-            connectionProvider.ExecuteReader(builder.ToString(), CommandType.Text, null, reader =>
+            connectionProvider.ExecuteReader(builder.ToString(), CommandType.Text, null, null, reader =>
             {
                 while (reader.Read())
                 {
@@ -783,12 +756,15 @@ namespace Framework.Data
                         foreach (var column in columns)
                         {
                             var dbColumn = dbColumns.FirstOrDefault(p => p.Name.Equals(column.Name, StringComparison.CurrentCultureIgnoreCase));
-                            if (dbColumn == null && table.Schema.Attributes.HasFlag(EntitySchemaAttributes.CreateColumn))
+                            if (dbColumn == null)
                             {
-                                var commandText = string.Format("Alter Table [{0}] Add [{1}] {2}",
-                                    table.Name, column.Name, MsSqlHelper.GetDbTypeString(column));
-                                connectionProvider.ExecuteNonQuery(commandText);
-                                hasChanged = true;
+                                if (table.Schema.Attributes.HasFlag(EntitySchemaAttributes.CreateColumn))
+                                {
+                                    var commandText = string.Format("Alter Table [{0}] Add [{1}] {2}",
+                                        table.Name, column.Name, MsSqlHelper.GetDbTypeString(column));
+                                    connectionProvider.ExecuteNonQuery(commandText);
+                                    hasChanged = true;
+                                }
                             }
                             else if (!dbColumn.DbType.Equals(MsSqlHelper.GetDbTypeString(column), StringComparison.CurrentCultureIgnoreCase) && table.Schema.Attributes.HasFlag(EntitySchemaAttributes.AlterColumn))
                             {

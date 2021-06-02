@@ -39,6 +39,7 @@ namespace Framework.Net.Remoting
 
             Init(singleInstance.GetType());
         }
+
         public ServiceHost(Type serviceType, ServiceSetting setting)
         {
             if (serviceType == null)
@@ -53,7 +54,9 @@ namespace Framework.Net.Remoting
         }
 
         public ServiceSetting Setting => _setting;
+
         public bool Active => m_Active;
+
         public IServerCredentials Credentials
         {
             get { return _credentials; }
@@ -68,8 +71,9 @@ namespace Framework.Net.Remoting
             }
         }
 
-        public event EventHandler<SessionEventArgs> NewerSession;
-        public event EventHandler<SessionEventArgs> Disconnected;
+        public event EventHandler<SessionEventArgs>? NewerSession;
+
+        public event EventHandler<SessionEventArgs>? Disconnected;
 
         private void Init(Type serviceType)
         {
@@ -100,13 +104,14 @@ namespace Framework.Net.Remoting
             _socketListen.NoDelay = endpoint.NoDelay;
             _socketListen.KeepAlive = endpoint.KeepAlive;
             _socketListen.Connected += SocketListen_Connected;
-            _socketListen.DataReceived += SocketListen_DataReceived;
+            _socketListen.Received += SocketListen_Received;
             _socketListen.Disconnected += SocketListen_Disconnected;
             _socketListen.Start();
 
             if (_setting.SessionCheckInterval > TimeSpan.Zero)
                 _timer = new Timer(new TimerCallback(ClearSession), null, _setting.SessionCheckInterval, _setting.SessionCheckInterval);
         }
+
         [MethodImpl(MethodImplOptions.Synchronized)]
         public void Close()
         {
@@ -134,7 +139,7 @@ namespace Framework.Net.Remoting
                     return;
                 }
 
-                _kvListener[session.HashCode] = listener;
+                _kvListener[session.Guid] = listener;
                 SessionContext.Session = session;
                 try
                 {
@@ -150,7 +155,8 @@ namespace Framework.Net.Remoting
                 logger.Error("ServiceHost Connected error:{0}", ex);
             }
         }
-        void SocketListen_DataReceived(object sender, SocketEventArgs e)
+
+        void SocketListen_Received(object sender, SocketEventArgs e)
         {
             if (_kvListener.TryGetValue(e.Socket.Guid, out IClientSessionListener listener))
             {
@@ -172,6 +178,7 @@ namespace Framework.Net.Remoting
                 }
             }
         }
+
         void SocketListen_Disconnected(object sender, SocketEventArgs e)
         {
             if (_kvListener.TryRemove(e.Socket.Guid, out IClientSessionListener listener))
@@ -195,6 +202,7 @@ namespace Framework.Net.Remoting
                 }
             }
         }
+
         void ClearSession(object obj)
         {
             foreach (var listener in _kvListener.Values)
@@ -203,7 +211,7 @@ namespace Framework.Net.Remoting
                 if (DateTime.Now - session.LastActivityTime > _setting.SessionTimeout)
                 {
                     session.Close();
-                    logger.Debug("Session: EndPoint:{0} HashCode:{1} timeout...", session.RemoteEndPoint, session.HashCode);
+                    logger.Debug("Session: EndPoint:{0} Guid:{1} timeout...", session.RemoteEndPoint, session.Guid);
                     continue;
                 }
                 if (DateTime.Now - session.LastActivityTime > _setting.HeartbeatTimeout)
@@ -227,6 +235,7 @@ namespace Framework.Net.Remoting
             _kvListener.Clear();
             m_Active = false;
         }
+
         private void RaiseNewerSessionEvent(SessionEventArgs e)
         {
             var newerSession = NewerSession;
@@ -238,10 +247,11 @@ namespace Framework.Net.Remoting
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("ServiceHost Connected event error:" + ex);
+                    logger.Error("ServiceHost Connected event error:{0}", ex);
                 }
             }
         }
+
         private void RaiseDisconnectedEvent(SessionEventArgs e)
         {
             var disconnected = Disconnected;
@@ -253,7 +263,7 @@ namespace Framework.Net.Remoting
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("ServiceHost Disconnected event error:" + ex);
+                    logger.Error("ServiceHost Disconnected event error:{0}", ex);
                 }
             }
         }

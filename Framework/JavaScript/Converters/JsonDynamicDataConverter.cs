@@ -11,8 +11,8 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 对象 转换到 Json
         /// </summary>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
         public static Json TargetToJson(object obj)
         {
@@ -22,7 +22,7 @@ namespace Framework.JavaScript.Converters
             var type = obj.GetType();
             var members = JsonUtility.GetJsonMemberAttributes(type);
             var json = new JsonObject();
-            foreach (var member in members.OrderBy(p => p.ShowIndex))
+            foreach (var member in members)
             {
                 if (member.CanRead)
                 {
@@ -38,12 +38,12 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// Json 转换到 对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
-        public static object JsonToTarget(Json json, object obj)
+        public static object? JsonToTarget(Json json, object obj)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
@@ -51,10 +51,9 @@ namespace Framework.JavaScript.Converters
                 throw new ArgumentNullException(nameof(obj));
             if (json == Json.Null)
                 return null;
-            if (!(json is JsonObject))
+            if (json is not JsonObject jobj)
                 throw new ArgumentException("JsonDynamicDataFormat 转换异常,[Json] 类型错误!");
 
-            var jobj = json as JsonObject;
             var type = obj.GetType();
             var members = JsonUtility.GetJsonMemberAttributes(type);
             foreach (var member in members)
@@ -72,29 +71,32 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// Json 转换到 对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
-        public static object JsonToTarget(Json json, Type conversionType)
+        public static object? JsonToTarget(Json json, Type conversionType)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
             if (json == Json.Null)
                 return null;
-            if (!(json is JsonObject))
+            if (json is not JsonObject jobj)
                 throw new ArgumentException("JsonDynamicDataFormat 转换异常, [Json] 类型错误!");
-
-            var jobj = json as JsonObject;
-            if (!jobj.ContainsKey("ClassName"))
+            if (!jobj.TryGetValue(nameof(IJsonDynamicObject.ClassName), out Json jname))
                 throw new JsonFormatException("JsonDynamicDataFormat 转换异常,[ClassName] 丢失!");
 
-            string typeName = jobj["ClassName"];
-            Type itemType = JsonType.GetTypeByName(typeName, conversionType);
+            var typeName = (string?)jname;
+            if (typeName == null)
+            {
+                throw new JsonFormatException("JsonDynamicDataFormat 转换异常,[ClassName] is null!");
+            }
+            var itemType = JsonType.GetTypeByName(typeName, conversionType);
             if (itemType == null)
+            {
                 throw new JsonFormatException("JsonDynamicDataFormat 转换异常,未找到类型 [Type]=[" + typeName + "]!");
-
+            }
             var target = JsonUtility.GetUninitializedObject(itemType);
             var members = JsonUtility.GetJsonMemberAttributes(itemType);
             foreach (var member in members)
@@ -112,8 +114,8 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 序列化指定对象
         /// </summary>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonerializerException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         public Json ConvertFrom(object value, Type conversionType)
         {
             return TargetToJson(value);
@@ -122,14 +124,15 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 反序列化对象
         /// </summary>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
-        /// <exception cref="Framework.Jsons.JsonerializerException"></exception>
-        public object ConvertTo(Json json, Type conversionType)
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public object? ConvertTo(Json json, Type conversionType)
         {
             return JsonToTarget(json, conversionType);
         }
     }
+
     /// <summary>
     /// JsonDynamicData
     /// </summary>

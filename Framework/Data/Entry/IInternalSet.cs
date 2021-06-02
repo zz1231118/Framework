@@ -1,15 +1,7 @@
-﻿using System;
-
-namespace Framework.Data.Entry
+﻿namespace Framework.Data.Entry
 {
-    internal interface IInternalSet
+    internal interface IInternalSet : ISet
     {
-        int Count { get; }
-
-        Type EntityType { get; }
-
         IEntitySchema EntitySchema { get; }
-
-        RowEntry[] GetRowEntries();
     }
 }

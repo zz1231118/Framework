@@ -9,19 +9,23 @@ namespace Framework.Net.Sockets
         {
             SocketError = socketError;
         }
+
         internal SocketEventArgs(ExSocket socket, SocketError socketError)
         {
             Socket = socket;
             SocketError = socketError;
         }
+
         internal SocketEventArgs(ExSocket socket, SocketError socketError, byte[] data)
             : this(socket, socketError)
         {
             Data = data;
         }
 
-        public ExSocket Socket { get; }
+        public ExSocket? Socket { get; }
+
         public SocketError SocketError { get; }
-        public byte[] Data { get; }
+
+        public byte[]? Data { get; }
     }
 }

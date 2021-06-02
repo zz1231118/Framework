@@ -8,7 +8,7 @@ namespace Framework.Runtime.Serialization.Protobuf
         private const int BufferLength = 1024;
         private const int PoolSize = 20;
 
-        private static readonly byte[][] _pool = new byte[PoolSize][];
+        private static readonly byte[]?[] _pool = new byte[PoolSize][];
 
         private static void InternalRelease(byte[] buffer)
         {
@@ -23,7 +23,7 @@ namespace Framework.Runtime.Serialization.Protobuf
 
         public static byte[] GetBuffer()
         {
-            byte[] array;
+            byte[]? array;
             for (int i = 0; i < PoolSize; i++)
             {
                 array = Interlocked.Exchange(ref _pool[i], null);

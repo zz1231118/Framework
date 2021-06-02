@@ -7,7 +7,7 @@ namespace Framework.JavaScript
     /// Json 设置
     /// </summary>
     [Serializable]
-    public class Jsonetting
+    public class JsonSetting
     {
         private const string DefaultEncodingName = "GBK";
 

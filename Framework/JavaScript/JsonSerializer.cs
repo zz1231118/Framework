@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Linq;
-using System.Reflection;
 using Framework.JavaScript.Converters;
 using Framework.JavaScript.Utility;
 
@@ -15,30 +14,27 @@ namespace Framework.JavaScript
         /// <summary>
         /// 序列化
         /// </summary>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         /// <return>序列化的 Json</return>
-        public static Json Serialize(object obj, bool checkAttribute = true)
+        public static Json Serialize(object? obj)
         {
             if (obj == null)
                 return Json.Null;
 
             var type = obj.GetType();
             if (Json.IsDefined(type))
-                return Json.ConvertTo(obj);
-            if (typeof(IList).IsAssignableFrom(type))
-                return ListSerialize(obj as IList);
-            if (typeof(IDictionary).IsAssignableFrom(type))
-                return DictionarySerialize(obj as IDictionary);
+                return Json.ConvertFrom(obj);
+            if (obj is IList list)
+                return ListSerialize(list);
+            if (obj is IDictionary dictionary)
+                return DictionarySerialize(dictionary);
             if (type.IsClass || type.IsValueType)
             {
-                if (!checkAttribute)
-                    return NoCharacteristicSerialize(obj);
-
-                if (typeof(IJsonDynamicObject).IsAssignableFrom(type))
+                if (obj is IJsonDynamicObject jdobj)
                 {
-                    return DynamicDataSerialize(obj as IJsonDynamicObject);
+                    return DynamicDataSerialize(jdobj);
                 }
                 else
                 {
@@ -46,25 +42,27 @@ namespace Framework.JavaScript
                 }
             }
 
-            throw new JsonerializerException("Json 序列化异常,未知类型. Type=[" + type.FullName + "]");
+            throw new JsonSerializerException("Json 序列化异常,未知类型. Type=[" + type.FullName + "]");
         }
+
         /// <summary>
         /// 序列化
         /// </summary>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
-        public static T Serialize<T>(object obj, bool checkAttribute = true)
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public static T Serialize<T>(object? obj)
             where T : Json
         {
-            return (T)Serialize(obj, checkAttribute);
+            return (T)Serialize(obj);
         }
+
         /// <summary>
         /// 序列化 IList
         /// </summary>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         private static Json ListSerialize(IList iList)
         {
             var array = new JsonArray();
@@ -75,12 +73,13 @@ namespace Framework.JavaScript
 
             return array;
         }
+
         /// <summary>
         /// 序列化 IDictionary
         /// </summary>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         private static Json DictionarySerialize(IDictionary kv)
         {
             var array = new JsonArray();
@@ -94,17 +93,18 @@ namespace Framework.JavaScript
 
             return array;
         }
+
         /// <summary>
         /// 序列化 类
         /// </summary>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         private static JsonObject DataSerialize(object obj)
         {
             var type = obj.GetType();
             var members = JsonUtility.GetJsonMemberAttributes(type);
             var json = new JsonObject();
-            foreach (var member in members.OrderBy(p => p.ShowIndex))
+            foreach (var member in members)
             {
                 if (member.CanRead)
                 {
@@ -115,7 +115,7 @@ namespace Framework.JavaScript
                     }
                     catch (Exception ex)
                     {
-                        throw new JsonerializerException("Json 序列化异常 Type.Name=[" + type.Name +
+                        throw new JsonSerializerException("Json 序列化异常 Type.Name=[" + type.Name +
                             "] Member.Name=[" + member.Name + "] Exception.Message=[" + ex.Message + "] Exception.StackTrace=[" +
                             ex.StackTrace + "]", ex);
                     }
@@ -124,49 +124,30 @@ namespace Framework.JavaScript
 
             return json;
         }
+
         /// <summary>
         /// 序列化 动态类
         /// </summary>
         /// <param name="obj"></param>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         private static Json DynamicDataSerialize(IJsonDynamicObject obj)
         {
             var json = DataSerialize(obj);
             json[nameof(IJsonDynamicObject.ClassName)] = obj.ClassName;
             return json;
         }
-        /// <summary>
-        /// 无特性 序列化
-        /// </summary>
-        private static Json NoCharacteristicSerialize(object obj)
-        {
-            var type = obj.GetType();
-            var json = new JsonObject();
-            var bindAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            foreach (var property in type.GetProperties(bindAttr))
-            {
-                if (property.CanRead)
-                {
-                    var value = property.GetValue(obj, null);
-                    var jsval = Serialize(value, false);
-                    json[property.Name] = jsval;
-                }
-            }
-
-            return json;
-        }
 
         /// <summary>
         /// 反序列化
         /// </summary>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
-        public static object Deserialize(Json json, object obj, bool checkAttribute = true)
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public static object? Deserialize(Json json, object obj)
         {
-            if (json == null)
+            if (json is null)
                 throw new ArgumentNullException(nameof(json));
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -176,47 +157,48 @@ namespace Framework.JavaScript
             var type = obj.GetType();
             if (Json.IsDefined(type))
             {
-                return Json.ChangeType(json, type);
+                return Json.ConvertTo(json, type);
             }
-            if (obj is IList)
+            if (obj is IList list)
             {
-                if (!(json is JsonArray))
-                    throw new JsonerializerException("Json 序列化异常,参数错误!");
+                if (json is not JsonArray array)
+                    throw new JsonSerializerException("Json 序列化异常,参数错误!");
 
-                return CollectionDeserialize(json as JsonArray, obj as IList);
+                return CollectionDeserialize(array, list);
             }
             if (type.IsClass || type.IsValueType)
             {
-                if (!(json is JsonObject))
-                    throw new JsonerializerException("Json 序列化异常,参数错误!");
+                if (json is not JsonObject jobj)
+                    throw new JsonSerializerException("Json 序列化异常,参数错误!");
 
-                return ClassDeserialize(json as JsonObject, obj);
+                return ClassDeserialize(jobj, obj);
             }
 
-            throw new JsonerializerException("Json 序列化异常,未知类型. Type=[" + type.FullName + "]");
+            throw new JsonSerializerException("Json 序列化异常,未知类型. Type=[" + type.FullName + "]");
         }
+
         /// <summary>
         /// 反序列化
         /// </summary>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
-        public static T Deserialize<T>(Json json, object obj, bool checkAttribute = true)
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public static T? Deserialize<T>(Json json, object obj)
         {
-            var desObj = Deserialize(json, obj);
-            return desObj == null ? default(T) : (T)desObj;
+            return (T)Deserialize(json, obj);
         }
+
         /// <summary>
         /// 反序列化
         /// </summary>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
-        public static object Deserialize(Json json, Type type, bool checkAttribute = true)
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public static object? Deserialize(Json json, Type type)
         {
-            if (json == null)
+            if (json is null)
                 throw new ArgumentNullException(nameof(json));
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -225,55 +207,57 @@ namespace Framework.JavaScript
 
             if (Json.IsDefined(type))
             {
-                return Json.ChangeType(json, type);
+                return Json.ConvertTo(json, type);
             }
             if (typeof(IList).IsAssignableFrom(type))
             {
-                var array = json as JsonArray;
-                object obj = type.IsArray
-                    ? Array.CreateInstance(type.GetElementType(), array.Count)
-                    : JsonUtility.GetUninitializedObject(type);
+                if (json is not JsonArray array)
+                {
+                    throw new JsonSerializerException($"{nameof(Deserialize)} to {type.FullName} fail. json format error.");
+                }
+                var list = type.IsArray
+                    ? (IList)Array.CreateInstance(type.GetElementType(), array.Count)
+                    : (IList)JsonUtility.GetUninitializedObject(type);
 
-                return CollectionDeserialize(array, obj as IList);
+                return CollectionDeserialize(array, list);
             }
             if (type.IsClass || type.IsAbstract || type.IsInterface || type.IsValueType)
             {
-                if (!(json is JsonObject))
-                    throw new JsonerializerException("Json 反序列化异常,参数不正确!");
-                if (!checkAttribute)
-                    return NoCharacteristicDeserialize(json as JsonObject, type);
+                if (json is not JsonObject jobj)
+                    throw new JsonSerializerException("Json 反序列化异常,参数不正确!");
 
                 if (typeof(IJsonDynamicObject).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface)
                 {
-                    return DynamicDataDeserialize(json as JsonObject, type);
+                    return DynamicDataDeserialize(jobj, type);
                 }
                 else
                 {
                     var obj = JsonUtility.GetUninitializedObject(type);
-                    return ClassDeserialize(json as JsonObject, obj);
+                    return ClassDeserialize(jobj, obj);
                 }
             }
 
-            throw new JsonerializerException("Json 反序列化异常,未知类型. Type=[" + type.FullName + "]");
+            throw new JsonSerializerException("Json 反序列化异常,未知类型. Type=[" + type.FullName + "]");
         }
+
         /// <summary>
         /// 反序列化
         /// </summary>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
-        public static T Deserialize<T>(Json json, bool checkAttribute = true)
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public static T? Deserialize<T>(Json json)
         {
-            var obj = Deserialize(json, typeof(T), checkAttribute);
-            return obj == null ? default(T) : (T)obj;
+            return (T)Deserialize(json, typeof(T));
         }
+
         /// <summary>
         /// 反序列化 IList
         /// </summary>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         private static IList CollectionDeserialize(JsonArray array, IList list)
         {
             var type = list.GetType();
@@ -296,12 +280,13 @@ namespace Framework.JavaScript
             }
             return list;
         }
+
         /// <summary>
         /// 反序列化 类
         /// </summary>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         private static object ClassDeserialize(JsonObject json, object obj)
         {
             var type = obj.GetType();
@@ -319,7 +304,7 @@ namespace Framework.JavaScript
                     }
                     catch (Exception ex)
                     {
-                        throw new JsonerializerException("Json 反序列化异常 Type.Name=[" + type.Name +
+                        throw new JsonSerializerException("Json 反序列化异常 Type.Name=[" + type.Name +
                             "] Member.Name=[" + key + "] Exception.Message=[" + ex.Message +
                             "] Exception.StackTrace=[" + ex.StackTrace + "]", ex);
                     }
@@ -328,54 +313,31 @@ namespace Framework.JavaScript
 
             return obj;
         }
+
         /// <summary>
         /// 反序列化 动态类
         /// </summary>
-        /// <exception cref="Framework.JavaScript.JsonFormatException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonerializerException"></exception>
-        /// <exception cref="Framework.JavaScript.JsonException"></exception>
-        private static object DynamicDataDeserialize(JsonObject json, Type type)
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        private static object DynamicDataDeserialize(JsonObject json, Type? type)
         {
-            if (!json.ContainsKey(nameof(IJsonDynamicObject.ClassName)))
-                throw new JsonerializerException("Json 反序列化异常,欲反向转换的数据错误 " + nameof(IJsonDynamicObject.ClassName) + " 丢失");
+            if (!json.TryGetValue(nameof(IJsonDynamicObject.ClassName), out Json value))
+                throw new JsonSerializerException("Json 反序列化异常,欲反向转换的数据错误 " + nameof(IJsonDynamicObject.ClassName) + " 丢失");
 
-            string typeName = (string)json[nameof(IJsonDynamicObject.ClassName)];
-            var targetType = JsonType.GetTypeByName(typeName, type);
-            if (targetType == null)
-                throw new JsonerializerException("Json 反序列化异常,转换的数据错误 未知的 Type=[" + typeName + "] 类型");
-
-            var obj = JsonUtility.GetUninitializedObject(targetType);
-            return ClassDeserialize(json, obj);
-        }
-        /// <summary>
-        /// 无特性 反序列化
-        /// </summary>
-        private static object NoCharacteristicDeserialize(JsonObject json, Type type)
-        {
-            if (typeof(IJsonDynamicObject).IsAssignableFrom(type) || type.IsInterface)
+            var name = (string?)value;
+            if (name == null)
             {
-                if (!json.ContainsKey(nameof(IJsonDynamicObject.ClassName)))
-                    throw new JsonerializerException(string.Format("Json 反序列化异常,{0}.{1} 丢失", nameof(IJsonDynamicObject), nameof(IJsonDynamicObject.ClassName)));
-
-                var typeName = (string)json[nameof(IJsonDynamicObject.ClassName)];
-                type = JsonType.GetTypeByName(typeName, type);
+                throw new JsonSerializerException($"{nameof(Deserialize)} {nameof(IJsonDynamicObject.ClassName)} is null.");
+            }
+            type = JsonType.GetTypeByName(name, type);
+            if (type == null)
+            {
+                throw new JsonSerializerException("Json 反序列化异常,转换的数据错误 未知的 Type=[" + name + "] 类型");
             }
 
             var obj = JsonUtility.GetUninitializedObject(type);
-            var bindAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            var properties = type.GetProperties(bindAttr).ToList();
-            foreach (var name in json.Keys)
-            {
-                var property = properties.FirstOrDefault(p => p.Name.Equals(name));
-                if (property != null && property.CanWrite)
-                {
-                    var jval = json[name];
-                    var value = Deserialize(jval, property.PropertyType, false);
-                    property.SetValue(obj, value, null);
-                }
-            }
-
-            return obj;
+            return ClassDeserialize(json, obj);
         }
     }
 }

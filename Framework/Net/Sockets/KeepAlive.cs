@@ -3,15 +3,34 @@ using System.Net.Sockets;
 
 namespace Framework.Net.Sockets
 {
-    public struct KeepAlive : IEquatable<KeepAlive>
+    public readonly struct KeepAlive : IEquatable<KeepAlive>
     {
-        public static readonly KeepAlive OFF = new KeepAlive(0, 0);
-        public static readonly KeepAlive One = new KeepAlive(1000, 1000);
-        public static readonly KeepAlive Two = new KeepAlive(2000, 2000);
-        public static readonly KeepAlive Three = new KeepAlive(3000, 3000);
+        public static readonly KeepAlive OFF = new KeepAlive(0);
+        public static readonly KeepAlive One = new KeepAlive(1000);
+        public static readonly KeepAlive Two = new KeepAlive(2000);
+        public static readonly KeepAlive Three = new KeepAlive(3000);
+        public static readonly KeepAlive Four = new KeepAlive(4000);
+        public static readonly KeepAlive Five = new KeepAlive(5000);
+        public static readonly KeepAlive Six = new KeepAlive(6000);
+        public static readonly KeepAlive Seven = new KeepAlive(7000);
+        public static readonly KeepAlive Eight = new KeepAlive(8000);
+        public static readonly KeepAlive Nine = new KeepAlive(9000);
+        public static readonly KeepAlive Ten = new KeepAlive(10000);
 
         private readonly TimeSpan _dueTime;
         private readonly TimeSpan _period;
+
+        public KeepAlive(TimeSpan value)
+        {
+            _dueTime = value;
+            _period = value;
+        }
+
+        public KeepAlive(uint milliseconds)
+        {
+            _dueTime = TimeSpan.FromMilliseconds(milliseconds);
+            _period = TimeSpan.FromMilliseconds(milliseconds);
+        }
 
         public KeepAlive(TimeSpan dueTime, TimeSpan period)
         {
@@ -45,11 +64,6 @@ namespace Framework.Net.Sockets
             return left._dueTime != right._dueTime || left._period != right._period;
         }
 
-        public static KeepAlive From(TimeSpan time)
-        {
-            return time <= TimeSpan.Zero ? OFF : new KeepAlive(time, time);
-        }
-
         private void GetBytes(byte[] bytes, int offset, int value)
         {
             bytes[offset + 0] = (byte)((value >> 0) & 0xFF);
@@ -57,6 +71,7 @@ namespace Framework.Net.Sockets
             bytes[offset + 2] = (byte)((value >> 16) & 0xFF);
             bytes[offset + 3] = (byte)((value >> 24) & 0xFF);
         }
+
         private byte[] GetBytes()
         {
             var @switch = this == OFF ? 0 : 1;

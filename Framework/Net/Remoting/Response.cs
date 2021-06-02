@@ -7,10 +7,13 @@ namespace Framework.Net.Remoting
     {
         [JsonMember]
         public long Id { get; internal set; }
+
         [JsonMember]
         public ResponseStatus Status { get; internal set; }
+
         [JsonMember]
-        public Json Result { get; internal set; }
+        public Json? Result { get; internal set; }
+
         internal MethodType Method { get; set; } = MethodType.Json;
 
         public T GetResult<T>()

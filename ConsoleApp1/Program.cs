@@ -8,8 +8,10 @@ using Framework.Data.Converters;
 using Framework.Data.Entry;
 using Framework.Data.Expressions;
 using Framework.Data.MsSql;
+using Framework.Injection;
 using Framework.JavaScript;
 using Framework.JavaScript.Converters;
+using Framework.Linq;
 using Framework.Log;
 using Framework.Net.Remoting;
 
@@ -17,28 +19,23 @@ namespace ConsoleApp1
 {
     class Program
     {
-        public class AbstractEntity
+        enum Gender : sbyte
         {
-            [JsonMember]
-            public virtual long ID { get; private set; }
-        }
-
-        public class GameObject : AbstractEntity
-        {
-            private long key;
-
-            [JsonMember]
-            public new long ID { get => key; set => key = value; }
-
-            [JsonMember]
-            public string Name { get; private set; }
+            None = -1,
+            Man,
+            Woman,
         }
 
         static void Main(string[] args)
         {
-            TestExpression2();
+            var ob = new { ID = 1 };
+            var type = ob.GetType();
+            var json = Framework.JavaScript.JsonSerializer.Serialize(ob);
+            var text = json.ToString();
+
+            TestInjection();
             //TestDbContext();
-            //TestLogger();
+            TestLogger();
             //TestDatabase();
             //TestJson();
             //TestRemote();
@@ -53,8 +50,6 @@ namespace ConsoleApp1
             var commandStruct = dbProvider.CreateCommand<SceneObject>(view.Name, DbCommandMode.Select);
             var fields = new List<long>() { };
 
-            var key = 3;
-            var name = "ss";
             var guid = Guid.NewGuid();
             commandStruct.Where(p => (p.ID == 0 || fields.Contains(p.ID)) && !p.Deleted);
             commandStruct.OrderBy(p => p.Guid, true);
@@ -70,28 +65,35 @@ namespace ConsoleApp1
             var commandStruct = dbProvider.CreateCommand<SceneObject>(view.Name, DbCommandMode.Select);
             commandStruct.Columns.Add(SqlExpression.As(SqlExpression.Function("count", SqlExpression.Symbol("*")), "Count"));
             var fields = new List<long>() { 4, 3 };
-            commandStruct.Where(p => (p.ID == 0 || fields.Contains(p.ID)) && !p.Deleted);
+            commandStruct.Where(p => (p.Function == null || fields.Contains(p.ID)) && !p.Deleted);
             commandStruct.OrderBy(p => p.ID);
 
             var commandText = commandStruct.CommandText;
         }
 
-        static void TestLogger()
+        static void TestExpression3()
         {
-            var loggerFactory = new LoggerFactory();
-            loggerFactory.AddProvider<FileLoggerProvider>();
-            Logger.LoggerFactory = loggerFactory;
+            var sb = new System.Data.SqlClient.SqlConnectionStringBuilder();
+            sb.DataSource = "115.159.55.137,1999";
+            sb.UserID = "chenguangxu";
+            sb.Password = "4572613";
+            sb.InitialCatalog = "BlingAccount";
+            EntitySchemaManager.LoadEntity<SceneObject>();
+            var view = EntitySchemaManager.GetSchema<SceneObject>(true);
+            var dbProvider = new Framework.Data.MsSql.MsSqlConnectionProvider(1, sb.ConnectionString);
+            var commandStruct = dbProvider.CreateCommand<SceneObject>(view.Name, DbCommandMode.Select);
+            var keys = new List<long>() { 1, 5, 7, 9 };
+            commandStruct.Where(p => p.Name != null && keys.Contains(p.ID));
+            commandStruct.OrderBy(p => p.ID);
+            var a = dbProvider.Select(commandStruct);
 
-            var logger = Logger.GetLogger<Program>();
-            logger.Error("hello world!");
-            Logger.Shutdown();
         }
 
-        static void TestJson()
+        static void TestLogger()
         {
-            var text = "{\"ID\":22,\"Name\":\"sssa\"}";
-            var json = Json.Parse(text);
-            var so = JsonSerializer.Deserialize<GameObject>(json);
+            Logger.AddFactory<FileLoggerFactory>();
+            var logger = Logger.GetLogger<Program>();
+            logger.Error("hello world!");
         }
 
         static void TestDatabase()
@@ -111,26 +113,45 @@ namespace ConsoleApp1
 
         static void TestDbContext()
         {
-            var dbConnectionBuilder = new System.Data.SqlClient.SqlConnectionStringBuilder();
-            dbConnectionBuilder.DataSource = "115.159.55.137,1999";
-            dbConnectionBuilder.UserID = "chenguangxu";
-            dbConnectionBuilder.Password = "4572613..cgx";
-            dbConnectionBuilder.InitialCatalog = "Manager.Account";
-            DbConnectionManager.Register(dbConnectionBuilder.InitialCatalog, new MsSqlConnectionProvider(10, dbConnectionBuilder.ConnectionString));
-            EntitySchemaManager.LoadEntity(typeof(Entity));
-            using (var dbContext = new DbContext())
+            try
             {
-                var entities = new List<Entity>();
-                for (int i = 0; i < 1000; i++)
-                {
-                    var entity = RowAdapter.Create<Entity>();
-                    entity.Name = (i + 3).ToString();
-                    entities.Add(entity);
-                }
+                WriteToDatabase();
+            }
+            catch (Exception ex)
+            {
+                var a = ex;
+            }
 
-                var dbSet = dbContext.Set<Entity>();
-                dbSet.RemoveRange(entities);
-                dbContext.SaveChanges();
+            void WriteToDatabase()
+            {
+                var dbConnectionBuilder = new System.Data.SqlClient.SqlConnectionStringBuilder();
+                dbConnectionBuilder.DataSource = "115.159.55.137,1999";
+                dbConnectionBuilder.UserID = "chenguangxu";
+                dbConnectionBuilder.Password = "4572613";
+                dbConnectionBuilder.InitialCatalog = "Manager.Account";
+                dbConnectionBuilder.ConnectTimeout = 10;
+
+                DbConnectionManager.Register(dbConnectionBuilder.InitialCatalog, new MsSqlConnectionProvider(10, dbConnectionBuilder.ConnectionString));
+                EntitySchemaManager.LoadEntity(typeof(Entity));
+                var option = new DbContextOptions();
+                option.ExceptionHandling = ExceptionHandling.Skip;
+                using (var dbContext = new DbContext(option))
+                {
+                    var dbSet = dbContext.Set<Entity>();
+                    dbSet.Add(new Entity() { ID = 2, Name = "a2" });
+                    dbSet.Add(new Entity() { ID = 3, Name = "a3" });
+                    try
+                    {
+                        dbContext.SaveChanges();
+                    }
+                    finally
+                    {
+                        foreach (var row in dbSet.RowEntries)
+                        {
+                            var a = row.State;
+                        }
+                    }
+                }
             }
         }
 
@@ -152,7 +173,42 @@ namespace ConsoleApp1
 
             var duration = DateTime.Now - node;
         }
+
+        static void TestInjection()
+        {
+            var builder = new ContainerBuilder();
+            builder.EnableAutowired();
+            builder.AddSingleton<Options, GatewayOptions>();
+            builder.AddSingleton<SystemTarget, Gateway>();
+            builder.AddSingleton<SystemTarget, Cluster>();
+            var container = builder.Build();
+            var gateway = container.Required<SystemTarget>();
+            var a = gateway;
+        }
+
+        public abstract class Options
+        {
+            public string Address { get; set; }
+        }
+
+        public class GatewayOptions : Options
+        { }
+
+        public abstract class SystemTarget
+        {
+            [Autowired]
+            private Options options;
+        }
+
+        public class Gateway : SystemTarget
+        { }
+
+        public class Cluster : Gateway
+        { }
     }
+
+    public class Function
+    { }
 
     [EntityTable]
     class SceneObject
@@ -168,6 +224,9 @@ namespace ConsoleApp1
 
         [EntityColumn]
         public Guid Guid { get; set; }
+    
+        [EntityColumn(ConverterType = typeof(JsonEntityConverter<Function>))]
+        public Function Function { get; set; }
     }
 
     [EntityTable(ConnectKey = "Game")]
@@ -189,7 +248,7 @@ namespace ConsoleApp1
         [EntityColumn(MaxLength = 50)]
         public string Name { get; set; }
 
-        [EntityColumn(ConvertType = typeof(JsonConverter<JsonCollectionConverter<Permission>>))]
+        [EntityColumn(ConverterType = typeof(JsonConverter<JsonCollectionConverter<Permission>>))]
         public List<Permission> Permissions { get; set; }
 
         public class Permission

@@ -94,7 +94,7 @@ namespace Framework.Utility
         /// <returns></returns>
         public static byte[] DeCompress(Stream aSourceStream)
         {
-            byte[] vUnZipByte = null;
+            byte[]? vUnZipByte = null;
             GZipStream vUnZipStream;
 
             using (MemoryStream vMemory = new MemoryStream())

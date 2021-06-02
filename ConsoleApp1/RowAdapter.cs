@@ -7,6 +7,7 @@ using Framework.Data;
 using Framework.Data.Command;
 using Framework.Data.Expressions;
 using Framework.JavaScript;
+using Framework.Linq;
 
 namespace ConsoleApp1
 {
@@ -18,7 +19,7 @@ namespace ConsoleApp1
 
         [JsonMember]
         [EntityColumn(IsPrimary = true)]
-        public virtual long ID { get; protected set; }
+        public virtual long ID { get; set; }
 
         public static void LoadPrimary(IEntitySchema entitySchema)
         {
@@ -46,7 +47,7 @@ namespace ConsoleApp1
             obj.Initialize();
             return obj;
         }
-        public static List<T> Load<T>(DbConnectionProvider connectionProvider, IDbCommandStruct commandStruct)
+        public static List<T> Load<T>(DbConnectionProvider connectionProvider, IDbCommandStruct<T> commandStruct)
             where T : RowAdapter, new()
         {
             if (connectionProvider == null)
@@ -54,7 +55,7 @@ namespace ConsoleApp1
             if (commandStruct == null)
                 throw new ArgumentNullException(nameof(commandStruct));
 
-            var rows = DbHelper.Load<T>(connectionProvider, commandStruct);
+            var rows = connectionProvider.Select<T>(commandStruct);
             foreach (var row in rows)
             {
                 row._saveUsage = SaveUsage.Update;
@@ -77,7 +78,7 @@ namespace ConsoleApp1
             }
             return Load<T>(connectionProvider, commandStruct);
         }
-        public static List<T> Load<T>(IDbCommandStruct commandStruct)
+        public static List<T> Load<T>(IDbCommandStruct<T> commandStruct)
             where T : RowAdapter, new()
         {
             if (commandStruct == null)
@@ -133,10 +134,10 @@ namespace ConsoleApp1
                 case SaveUsage.Unknown:
                     throw new InvalidOperationException("Unknown SaveUsage");
                 case SaveUsage.Update:
-                    DbHelper.Update(connectionProvider, new object[] { this });
+                    connectionProvider.Update(new object[] { this });
                     break;
                 case SaveUsage.Insert:
-                    DbHelper.Insert(connectionProvider, new object[] { this });
+                    connectionProvider.Insert(new object[] { this });
                     break;
             }
         }

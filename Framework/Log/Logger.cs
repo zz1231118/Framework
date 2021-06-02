@@ -8,20 +8,28 @@ namespace Framework.Log
     public static class Logger
     {
         private static readonly object root = new object();
+        private static readonly ConcurrentBag<ILoggerFactory> factories = new ConcurrentBag<ILoggerFactory>();
+        private static readonly ConcurrentDictionary<Level, MessageLogger[]> messageLoggers = new ConcurrentDictionary<Level, MessageLogger[]>();
         private static readonly ConcurrentDictionary<string, ILogger> loggers = new ConcurrentDictionary<string, ILogger>();
-        private static LoggerSetting setting;
-        private static LogLevel level = LogLevel.Warn;
-        private static ILoggerFactory loggerFactory = NullLoggerFactory.Instance;
-        private static Timer checkFlushTimer;
+        private static readonly Func<string, ILogger> valueFactory = key => new ScopeLogger(key);
+        private static ILoggerConfiguration configuration;
+        private static Timer? autoFlushTimer;
 
         static Logger()
         {
-            Initialize(LoggerSetting.Default);
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(ProcessExit);
+            AppDomain.CurrentDomain.DomainUnload += new EventHandler(DomainUnload);
+            Initialize(LoggerConfiguration.Default);
         }
 
-        public static LoggerSetting Setting
+        /// <summary>
+        /// Log 输出等级。默认：<see cref="Level.Info" />。
+        /// </summary>
+        public static Level Level { get; set; } = Level.Info;
+
+        public static ILoggerConfiguration Configuration
         {
-            get => setting;
+            get => configuration;
             set
             {
                 if (value == null)
@@ -31,98 +39,110 @@ namespace Framework.Log
             }
         }
 
-        public static LogLevel Level
-        {
-            get => level;
-            set => level = value;
-        }
+        public static IReadOnlyCollection<ILoggerFactory> Factories => factories;
 
-        public static ILoggerFactory LoggerFactory
+        public static IReadOnlyCollection<ILogger> Loggers
         {
-            get => loggerFactory;
-            set
+            get
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                List<ILogger> oldLoggers;
-                lock (root)
-                {
-                    oldLoggers = new List<ILogger>(loggers.Values);
-                    loggerFactory = value;
-                    loggers.Clear();
-                }
-
-                foreach (var logger in oldLoggers)
-                {
-                    logger.Flush();
-                    logger.Dispose();
-                }
+                var collection = loggers.Values;
+                return collection as IReadOnlyCollection<ILogger> ?? new List<ILogger>(collection);
             }
         }
 
-        public static event EventHandler<LoggerEventArgs> NewLogger;
+        public static event EventHandler<LoggerUnhandledExceptionEventArgs>? UnhandledException;
 
-        public static event EventHandler<LoggerUnhandledExceptionEventArgs> UnhandledException;
-
-        private static void Initialize(LoggerSetting setting)
+        private static void Initialize(ILoggerConfiguration configuration)
         {
             lock (root)
             {
-                if (checkFlushTimer != null)
+                if (autoFlushTimer != null)
                 {
-                    checkFlushTimer.Dispose();
-                    checkFlushTimer = null;
+                    autoFlushTimer.Dispose();
+                    autoFlushTimer = null;
                 }
-                if (setting.IsAutoFlush)
+                if (configuration.IsAutoFlush)
                 {
-                    checkFlushTimer = new Timer(new TimerCallback(CheckFlushTimer_Callbacked), null, setting.FlushInterval, setting.FlushInterval);
+                    autoFlushTimer = new Timer(new TimerCallback(AutoFlushTimerCallbacked), null, configuration.FlushInterval, configuration.FlushInterval);
                 }
 
-                Logger.setting = setting;
+                Logger.configuration = configuration;
             }
         }
 
-        private static void CheckFlushTimer_Callbacked(object obj)
+        private static void ProcessExit(object sender, EventArgs e)
         {
-            Flush();
+            Shutdown();
         }
 
-        private static ILogger CreateLogger(string name)
+        private static void DomainUnload(object sender, EventArgs e)
         {
-            var logger = loggerFactory.CreateLogger(name);
-            var newLogger = NewLogger;
-            if (newLogger != null)
+            Shutdown();
+        }
+
+        private static void AutoFlushTimerCallbacked(object obj)
+        {
+            try
             {
-                try
-                {
-                    newLogger(null, new LoggerEventArgs(logger));
-                }
-                catch (Exception ex)
-                {
-                    NotifyUnhandledExceptionEvent(new LoggerUnhandledExceptionEventArgs(logger, ex));
-                }
+                Flush();
             }
-            return logger;
+            catch (Exception ex)
+            {
+                var e = new LoggerUnhandledExceptionEventArgs(ex);
+                NotifyUnhandledExceptionEvent(e);
+                return;
+            }
         }
 
-        public static bool IsEnabled(LogLevel level)
+        private static MessageLogger[] GetLoggers(Level level)
         {
-            return level >= Logger.level;
+            if (!messageLoggers.TryGetValue(level, out MessageLogger[] value))
+            {
+                lock (root)
+                {
+                    if (!messageLoggers.TryGetValue(level, out value))
+                    {
+                        var loggers = new List<MessageLogger>();
+                        foreach (var factory in factories)
+                        {
+                            loggers.Add(factory.CreateLogger(level));
+                        }
+
+                        value = loggers.ToArray();
+                        messageLoggers[level] = value;
+                    }
+                }
+            }
+            return value;
+        }
+
+        public static void AddFactory(ILoggerFactory factory)
+        {
+            if (factory == null)
+                throw new ArgumentNullException(nameof(factory));
+
+            factories.Add(factory);
+        }
+
+        public static void AddFactory<T>(Action<T> initializer = null)
+            where T : ILoggerFactory, new()
+        {
+            var factory = Activator.CreateInstance<T>();
+            initializer?.Invoke(factory);
+            factories.Add(factory);
+        }
+
+        public static bool IsEnabled(Level level)
+        {
+            if (level == null)
+                throw new ArgumentNullException(nameof(level));
+
+            return level >= Level;
         }
 
         public static ILogger GetLogger(string name)
         {
-            lock (root)
-            {
-                if (!loggers.TryGetValue(name, out ILogger logger))
-                {
-                    logger = loggerFactory.CreateLogger(name);
-                    loggers[name] = logger;
-                }
-
-                return logger;
-            }
+            return loggers.GetOrAdd(name, valueFactory);
         }
 
         public static ILogger GetLogger(Type type)
@@ -130,37 +150,46 @@ namespace Framework.Log
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            return GetLogger(type.FullName);
+            return loggers.GetOrAdd(type.FullName, valueFactory);
         }
 
         public static ILogger GetLogger<T>()
         {
-            return GetLogger(typeof(T));
+            return loggers.GetOrAdd(typeof(T).FullName, valueFactory);
         }
 
         public static void Flush()
         {
-            foreach (var logger in loggers.Values)
+            foreach (var loggers in messageLoggers.Values)
             {
-                logger.Flush();
+                foreach (var logger in loggers)
+                {
+                    logger.Flush();
+                }
             }
         }
 
         public static void Shutdown()
         {
-            var flushTimer = checkFlushTimer;
-            if (flushTimer != null)
+            lock (root)
             {
-                checkFlushTimer = null;
-                flushTimer.Dispose();
+                if (autoFlushTimer != null)
+                {
+                    autoFlushTimer.Dispose();
+                    autoFlushTimer = null;
+                }
             }
 
-            foreach (var logger in loggers.Values)
+            foreach (var loggers in messageLoggers.Values)
             {
-                logger.Dispose();
+                foreach (var logger in loggers)
+                {
+                    logger.Flush();
+                    logger.Dispose();
+                }
             }
 
-            loggers.Clear();
+            messageLoggers.Clear();
         }
 
         public static void NotifyUnhandledExceptionEvent(LoggerUnhandledExceptionEventArgs e)
@@ -169,6 +198,45 @@ namespace Framework.Log
             if (!e.Observed)
             {
                 throw e.Exception;
+            }
+        }
+
+        class ScopeLogger : ILogger
+        {
+            private readonly string name;
+
+            public ScopeLogger(string name)
+            {
+                this.name = name;
+            }
+
+            public string Name => name;
+
+            public void Log(Level level, string format, params object[] args)
+            {
+                if (Logger.IsEnabled(level))
+                {
+                    var message = format;
+                    var loggers = Logger.GetLoggers(level);
+                    if (args.Length > 0)
+                    {
+                        try
+                        {
+                            message = string.Format(message, args);
+                        }
+                        catch (Exception ex)
+                        {
+                            var e = new LoggerUnhandledExceptionEventArgs(ex);
+                            Logger.NotifyUnhandledExceptionEvent(e);
+                            return;
+                        }
+                    }
+                    message = string.Format("[{0}] [{1}] {2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), name, message);
+                    foreach (var logger in loggers)
+                    {
+                        logger.Log(message);
+                    }
+                }
             }
         }
     }

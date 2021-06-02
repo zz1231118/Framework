@@ -7,19 +7,19 @@ namespace Framework.JavaScript
     /// Json 序列化异常
     /// </summary>
     [Serializable]
-    public class JsonerializerException : Exception
+    public class JsonSerializerException : Exception
     {
         /// <summary>
         /// Json 序列化异常 构造函数
         /// </summary>
-        public JsonerializerException()
+        public JsonSerializerException()
             : base()
         { }
 
         /// <summary>
         /// Json 序列化异常 构造函数
         /// </summary>
-        public JsonerializerException(string message)
+        public JsonSerializerException(string message)
             : base(message)
         { }
 
@@ -28,14 +28,14 @@ namespace Framework.JavaScript
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
-        public JsonerializerException(string message, Exception innerException)
+        public JsonSerializerException(string message, Exception innerException)
             : base(message, innerException)
         { }
 
         /// <summary>
         /// Json 异常 构造函数
         /// </summary>
-        protected JsonerializerException(SerializationInfo info, StreamingContext context)
+        protected JsonSerializerException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         { }
     }

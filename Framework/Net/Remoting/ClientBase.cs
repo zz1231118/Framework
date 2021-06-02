@@ -12,9 +12,6 @@ namespace Framework.Net.Remoting
 {
     public abstract class ClientBase : BaseDisposed
     {
-        public event EventHandler Connected;
-        public event EventHandler Disconnected;
-
         private static readonly ILogger logger = Logger.GetLogger<ClientBase>();
         private static readonly ConcurrentDictionary<Type, ClientTypeBuilder> _kvTypeBuilder = new ConcurrentDictionary<Type, ClientTypeBuilder>();
         private static readonly Func<Type, ClientTypeBuilder> _kvTypeBuilderFactory = key => new ClientTypeBuilder(key);
@@ -24,7 +21,7 @@ namespace Framework.Net.Remoting
         private bool _active;
         private TcpClient _tcpClient;
         private ClientEndpoint _endpoint;
-        private IClientCredentials _credentials;
+        private IClientCredentials? _credentials;
 
         public ClientBase(ClientEndpoint endpoint)
         {
@@ -33,14 +30,17 @@ namespace Framework.Net.Remoting
 
             _endpoint = endpoint;
         }
+
         ~ClientBase()
         {
             Dispose(false);
         }
 
         public bool Active => _active;
+
         public ClientEndpoint Endpoint => _endpoint;
-        public IClientCredentials Credentials
+
+        public IClientCredentials? Credentials
         {
             get { return _credentials; }
             set
@@ -52,7 +52,12 @@ namespace Framework.Net.Remoting
                 _credentials = value;
             }
         }
+
         public DateTime LastActiveTime { get; private set; }
+
+        public event EventHandler? Connected;
+
+        public event EventHandler? Disconnected;
 
         /// <summary>
         /// Create dynamic client
@@ -61,7 +66,7 @@ namespace Framework.Net.Remoting
         /// <param name="endpoint">server remote endpoint</param>
         /// <param name="credentials">credentials</param>
         /// <returns></returns>
-        public static object Create(Type clientType, ClientEndpoint endpoint, IClientCredentials credentials = null)
+        public static object Create(Type clientType, ClientEndpoint endpoint, IClientCredentials? credentials = null)
         {
             if (clientType == null)
                 throw new ArgumentNullException(nameof(clientType));
@@ -75,6 +80,7 @@ namespace Framework.Net.Remoting
             client._credentials = credentials;
             return client;
         }
+
         /// <summary>
         /// Create dynamic client
         /// </summary>
@@ -82,7 +88,7 @@ namespace Framework.Net.Remoting
         /// <param name="endpoint">server remote endpoint</param>
         /// <param name="credentials">credentials</param>
         /// <returns></returns>
-        public static T Create<T>(ClientEndpoint endpoint, IClientCredentials credentials = null)
+        public static T Create<T>(ClientEndpoint endpoint, IClientCredentials? credentials = null)
             where T : class
         {
             if (endpoint == null)
@@ -93,8 +99,9 @@ namespace Framework.Net.Remoting
             var factory = _kvTypeBuilder.GetOrAdd(typeof(T), _kvTypeBuilderFactory);
             var client = factory.Create(endpoint);
             client._credentials = credentials;
-            return client as T;
+            return (T)(object)client;
         }
+
         /// <summary>
         /// Close proxy
         /// </summary>
@@ -103,7 +110,7 @@ namespace Framework.Net.Remoting
         {
             if (proxy == null)
                 throw new ArgumentNullException(nameof(proxy));
-            if (!(proxy is ClientBase client))
+            if (proxy is not ClientBase client)
                 throw new ArgumentException(nameof(proxy));
 
             client.Close();
@@ -126,7 +133,7 @@ namespace Framework.Net.Remoting
             _tcpClient.NoDelay = _endpoint.NoDelay;
             _tcpClient.KeepAlive = _endpoint.KeepAlive;
             _tcpClient.Connected += TcpClient_Connected;
-            _tcpClient.DataReceived += TcpClient_DataReceived;
+            _tcpClient.Received += TcpClient_Received;
             _tcpClient.Disconnected += TcpClient_Disconnected;
 
             try
@@ -139,6 +146,7 @@ namespace Framework.Net.Remoting
                 throw;
             }
         }
+
         /// <summary>
         /// Close
         /// </summary>
@@ -170,7 +178,8 @@ namespace Framework.Net.Remoting
                 PostSend(package);
             }
         }
-        void TcpClient_DataReceived(object sender, SocketEventArgs e)
+
+        void TcpClient_Received(object sender, SocketEventArgs e)
         {
             try
             {
@@ -188,6 +197,7 @@ namespace Framework.Net.Remoting
                 logger.Error("ClientBase DataReceived error:{0}", ex);
             }
         }
+
         void TcpClient_Disconnected(object sender, SocketEventArgs e)
         {
             DoClosed();
@@ -234,6 +244,7 @@ namespace Framework.Net.Remoting
                 Open();
             }
         }
+
         [MethodImpl(MethodImplOptions.Synchronized)]
         private void DoClosed()
         {
@@ -250,6 +261,7 @@ namespace Framework.Net.Remoting
             var byteAryForMsg = package.Data;
             _tcpClient.Send(byteAryForMsg, 0, byteAryForMsg.Length);
         }
+
         private Request CreateRequest(string command, object[] args)
         {
             var request = new Request();
@@ -265,6 +277,7 @@ namespace Framework.Net.Remoting
             }
             return request;
         }
+
         private Response SendRequest(MethodBase method, params object[] args)
         {
             FlushConnected();
@@ -296,10 +309,11 @@ namespace Framework.Net.Remoting
                     request.Dispose();
             }
         }
+
         /// <summary>
         /// Request
         /// </summary>
-        /// <param name="command"></param>
+        /// <param name="method"></param>
         /// <param name="args"></param>
         /// <exception cref="System.ArgumentException"></exception>
         /// <exception cref="System.ArgumentNullException"></exception>
@@ -313,11 +327,12 @@ namespace Framework.Net.Remoting
 
             SendRequest(method, args);
         }
+
         /// <summary>
         /// Request
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="command"></param>
+        /// <param name="method"></param>
         /// <param name="args"></param>
         /// <exception cref="System.ArgumentException"></exception>
         /// <exception cref="System.ArgumentNullException"></exception>
@@ -344,10 +359,11 @@ namespace Framework.Net.Remoting
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("ClientBase Connected event error:" + ex);
+                    logger.Error("ClientBase Connected event error:{0}", ex);
                 }
             }
         }
+
         private void RaiseDisconnectedEvent(EventArgs e)
         {
             var disconnected = Disconnected;
@@ -359,7 +375,7 @@ namespace Framework.Net.Remoting
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("ClientBase Disconnected event error:" + ex);
+                    logger.Error("ClientBase Disconnected event error:{0}", ex);
                 }
             }
         }

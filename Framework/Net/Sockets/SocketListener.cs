@@ -25,13 +25,14 @@ namespace Framework.Net.Sockets
         private readonly ConcurrentStack<SocketAsyncEventArgs> ioEventArgsPool;
         private readonly Semaphore maxConnectionsEnforcer;
         private readonly SocketListenerStatistics statistics;
-        private SocketOperation sendOperation = SocketOperation.Asynchronization;
-        private Socket socket;
+        private SocketOperation sendOperation;
+        private Socket listenSocket;
         private BufferManager bufferManager;
         private int isInDisposing;
         private int isInActivating;
         private int bufferSize;
         private bool noDelay;
+        private bool initialized;
         private KeepAlive keepAlive;
         private TimeSpan sendTimeout;
         private TimeSpan receiveTimeout;
@@ -54,6 +55,7 @@ namespace Framework.Net.Sockets
             this.backlog = backlog;
             this.maxConnections = maxConnections;
             this.packetProcessor = packetProcessor;
+            this.sendOperation = SocketOperation.Asynchronization;
             this.bufferSize = SocketConstants.DefaultBufferSize;
             this.keepAlive = KeepAlive.OFF;
             this.maxConnectionsEnforcer = new Semaphore(maxConnections, maxConnections);
@@ -62,16 +64,6 @@ namespace Framework.Net.Sockets
             this.acceptEventArgs = new SocketAsyncEventArgs();
             this.acceptEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(Accept_Completed);
             this.ioEventArgsPool = new ConcurrentStack<SocketAsyncEventArgs>();
-            var numOfSaeaForRecSend = maxConnections * 2;
-            for (int i = 0; i < numOfSaeaForRecSend; i++)
-            {
-                var ioEventArgs = new SocketAsyncEventArgs();
-                ioEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
-
-                var dataToken = new DataToken();
-                ioEventArgs.UserToken = dataToken;
-                ioEventArgsPool.Push(ioEventArgs);
-            }
         }
 
         /// <inheritdoc />
@@ -130,10 +122,7 @@ namespace Framework.Net.Sockets
                     throw new ArgumentOutOfRangeException(nameof(value));
 
                 CheckDisposed();
-                if (IsActived)
-                {
-                    throw new InvalidOperationException("actived");
-                }
+                CheckInitialized();
 
                 bufferSize = value;
             }
@@ -150,10 +139,7 @@ namespace Framework.Net.Sockets
             set
             {
                 CheckDisposed();
-                if (IsActived)
-                {
-                    throw new InvalidOperationException("actived");
-                }
+                CheckInitialized();
 
                 noDelay = value;
             }
@@ -170,10 +156,7 @@ namespace Framework.Net.Sockets
             set
             {
                 CheckDisposed();
-                if (IsActived)
-                {
-                    throw new InvalidOperationException("actived");
-                }
+                CheckInitialized();
 
                 keepAlive = value;
             }
@@ -194,10 +177,7 @@ namespace Framework.Net.Sockets
                     throw new ArgumentOutOfRangeException(nameof(value));
 
                 CheckDisposed();
-                if (IsActived)
-                {
-                    throw new InvalidOperationException("actived");
-                }
+                CheckInitialized();
 
                 sendTimeout = value;
             }
@@ -218,10 +198,7 @@ namespace Framework.Net.Sockets
                     throw new ArgumentOutOfRangeException(nameof(value));
 
                 CheckDisposed();
-                if (IsActived)
-                {
-                    throw new InvalidOperationException("actived");
-                }
+                CheckInitialized();
 
                 receiveTimeout = value;
             }
@@ -240,10 +217,7 @@ namespace Framework.Net.Sockets
             set
             {
                 CheckDisposed();
-                if (IsActived)
-                {
-                    throw new InvalidOperationException("actived");
-                }
+                CheckInitialized();
 
                 sendOperation = value;
             }
@@ -262,17 +236,17 @@ namespace Framework.Net.Sockets
         /// <summary>
         /// Connected event
         /// </summary>
-        public event EventHandler<SocketEventArgs> Connected;
+        public event EventHandler<SocketEventArgs>? Connected;
 
         /// <summary>
         /// DataReceived event
         /// </summary>
-        public event EventHandler<SocketEventArgs> DataReceived;
+        public event EventHandler<SocketEventArgs>? Received;
 
         /// <summary>
         /// DataReceived event
         /// </summary>
-        public event EventHandler<SocketEventArgs> Disconnected;
+        public event EventHandler<SocketEventArgs>? Disconnected;
 
         void Accept_Completed(object sender, SocketAsyncEventArgs e)
         {
@@ -289,7 +263,7 @@ namespace Framework.Net.Sockets
             }
             catch (Exception ex)
             {
-                logger.Error("SocketListener Accept_Completed error:" + ex);
+                logger.Error("SocketListener Accept_Completed error:{0}", ex);
                 //throw ex;
             }
         }
@@ -298,8 +272,6 @@ namespace Framework.Net.Sockets
         {
             try
             {
-                var dataToken = (DataToken)e.UserToken;
-                dataToken.Socket.LastAccessTime = DateTime.Now;
                 switch (e.LastOperation)
                 {
                     case SocketAsyncOperation.Send:
@@ -320,7 +292,7 @@ namespace Framework.Net.Sockets
             //}
             catch (Exception ex)
             {
-                logger.Error("SocketListener IO_Completed error:" + ex);
+                logger.Error("SocketListener IO_Completed error:{0}", ex);
                 //throw ex;
             }
         }
@@ -335,9 +307,10 @@ namespace Framework.Net.Sockets
 
             maxConnectionsEnforcer.WaitOne();
             bool willRaiseEvent;
+
             try
             {
-                willRaiseEvent = socket.AcceptAsync(acceptEventArgs);
+                willRaiseEvent = listenSocket.AcceptAsync(acceptEventArgs);
             }
             catch (ObjectDisposedException)
             {
@@ -354,19 +327,19 @@ namespace Framework.Net.Sockets
         {
             try
             {
-                statistics.inboundConnectionCounter.Increment();
+                statistics.InboundConnectionCounter.Increment();
                 if (acceptEventArgs.SocketError != SocketError.Success)
                 {
                     ReleaseAcceptEventArgs(acceptEventArgs);
                     maxConnectionsEnforcer.Release();
-                    statistics.rejectedConnectionCounter.Increment();
+                    statistics.RejectedConnectionCounter.Increment();
                     return;
                 }
                 if (!ioEventArgsPool.TryPop(out SocketAsyncEventArgs ioEventArgs))
                 {
                     ReleaseAcceptEventArgs(acceptEventArgs);
                     maxConnectionsEnforcer.Release();
-                    statistics.rejectedConnectionCounter.Increment();
+                    statistics.RejectedConnectionCounter.Increment();
                     logger.Error("apply for IoEventArgs failed...");
                     return;
                 }
@@ -381,14 +354,12 @@ namespace Framework.Net.Sockets
                 if (receiveTimeout > TimeSpan.Zero) ioSocket.ReceiveTimeout = (int)receiveTimeout.TotalMilliseconds;
 
                 var newSocket = new ExSocket(ioSocket);
-                newSocket.LastAccessTime = DateTime.Now;
-
                 var dataToken = (DataToken)ioEventArgs.UserToken;
                 dataToken.Socket = newSocket;
                 dataToken.Reset();
                 ioEventArgs.SetBuffer(ioEventArgs.Offset, bufferSize);
 
-                statistics.currentConnectionCounter.Increment();
+                statistics.CurrentConnectionCounter.Increment();
                 NotifyConnectedEvent(new SocketEventArgs(newSocket, SocketError.Success));
                 if (newSocket.IsClosed)
                 {
@@ -440,7 +411,9 @@ namespace Framework.Net.Sockets
                 return;
             }
 
-            statistics.recvConcurrencyCounter.Increment();
+            statistics.ReceiveConcurrencyCounter.Increment();
+            statistics.ReceivedBytesTotalCounter.IncrementBy(ioEventArgs.BytesTransferred);
+
             var dataToken = (DataToken)ioEventArgs.UserToken;
             var exSocket = dataToken.Socket;
             var packetStreamer = exSocket.PacketStreamer;
@@ -451,10 +424,10 @@ namespace Framework.Net.Sockets
             }
             while (packetStreamer.TryDequeue(out byte[] bytes))
             {
-                NotifyDataReceivedEvent(new SocketEventArgs(dataToken.Socket, SocketError.Success, bytes));
+                NotifyReceivedEvent(new SocketEventArgs(dataToken.Socket, SocketError.Success, bytes));
             }
 
-            statistics.recvConcurrencyCounter.Decrement();
+            statistics.ReceiveConcurrencyCounter.Decrement();
             if (exSocket.IsClosed)
             {
                 DoClosed(ioEventArgs, SocketError.OperationAborted);
@@ -466,30 +439,31 @@ namespace Framework.Net.Sockets
 
         private void TryDequeueAndPostSend(ExSocket socket, SocketAsyncEventArgs ioEventArgs)
         {
-            if (socket.TryDequeueOrReset(out byte[] data))
+            if (socket.TryDequeueOrReset(out byte[]? data))
             {
                 var dataToken = (DataToken)ioEventArgs.UserToken;
                 dataToken.Socket = socket;
-                dataToken.byteArrayForMessage = data;
-                dataToken.messageLength = data.Length;
+                dataToken.ByteArrayForMessage = data;
+                dataToken.MessageLength = data.Length;
                 PostSend(ioEventArgs);
             }
             else
             {
                 ReleaseIOEventArgs(ioEventArgs);
-                statistics.sendConcurrencyCounter.Decrement();
+                statistics.SendConcurrencyCounter.Decrement();
             }
         }
 
         private void PostSend(SocketAsyncEventArgs ioEventArgs)
         {
             var dataToken = (DataToken)ioEventArgs.UserToken;
-            var differBytes = dataToken.messageLength - dataToken.messageBytesDone;
+            var differBytes = dataToken.MessageLength - dataToken.MessageBytesDone;
             var copyedBytes = bufferSize <= differBytes ? bufferSize : differBytes;
             ioEventArgs.SetBuffer(ioEventArgs.Offset, copyedBytes);
-            Buffer.BlockCopy(dataToken.byteArrayForMessage, dataToken.messageBytesDone, ioEventArgs.Buffer, ioEventArgs.Offset, copyedBytes);
+            Buffer.BlockCopy(dataToken.ByteArrayForMessage, dataToken.MessageBytesDone, ioEventArgs.Buffer, ioEventArgs.Offset, copyedBytes);
 
             bool willRaiseEvent;
+
             try
             {
                 willRaiseEvent = ioEventArgs.AcceptSocket.SendAsync(ioEventArgs);
@@ -497,7 +471,7 @@ namespace Framework.Net.Sockets
             catch (ObjectDisposedException)
             {
                 ReleaseIOEventArgs(ioEventArgs);
-                statistics.sendConcurrencyCounter.Decrement();
+                statistics.SendConcurrencyCounter.Decrement();
                 return;
             }
             if (!willRaiseEvent)
@@ -511,12 +485,13 @@ namespace Framework.Net.Sockets
             if (ioEventArgs.SocketError != SocketError.Success)
             {
                 ReleaseIOEventArgs(ioEventArgs);
-                statistics.sendConcurrencyCounter.Decrement();
+                statistics.SendConcurrencyCounter.Decrement();
                 return;
             }
             var dataToken = (DataToken)ioEventArgs.UserToken;
-            dataToken.messageBytesDone += ioEventArgs.BytesTransferred;
-            if (dataToken.messageBytesDone < dataToken.messageLength)
+            dataToken.MessageBytesDone += ioEventArgs.BytesTransferred;
+            statistics.SentBytesTotalCounter.IncrementBy(ioEventArgs.BytesTransferred);
+            if (dataToken.MessageBytesDone < dataToken.MessageLength)
             {
                 PostSend(ioEventArgs);
             }
@@ -544,7 +519,7 @@ namespace Framework.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("SocketListener ResetIOEventArgs error:" + ex);
+                    logger.Error("SocketListener ResetIOEventArgs error:{0}", ex);
                 }
 
                 acceptEventArgs.AcceptSocket = null;
@@ -574,9 +549,10 @@ namespace Framework.Net.Sockets
             var exSocket = dataToken.Socket;
             NotifyDisconnectedEvent(new SocketEventArgs(exSocket, socketError));
             ReleaseIOEventArgs(ioEventArgs);
+
             maxConnectionsEnforcer.Release();
-            statistics.closedConnectionCounter.Increment();
-            statistics.currentConnectionCounter.Decrement();
+            statistics.ClosedConnectionCounter.Increment();
+            statistics.CurrentConnectionCounter.Decrement();
         }
 
         private void NotifyConnectedEvent(SocketEventArgs e)
@@ -590,23 +566,23 @@ namespace Framework.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("SocketListener Connected event error:" + ex.ToString());
+                    logger.Error("SocketListener Connected event error:{0}", ex);
                 }
             }
         }
 
-        private void NotifyDataReceivedEvent(SocketEventArgs e)
+        private void NotifyReceivedEvent(SocketEventArgs e)
         {
-            var dataReceive = DataReceived;
-            if (dataReceive != null)
+            var received = Received;
+            if (received != null)
             {
                 try
                 {
-                    dataReceive(this, e);
+                    received(this, e);
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("SocketListener DataReceived event error:" + ex.ToString());
+                    logger.Error("SocketListener Received event error:{0}", ex);
                 }
             }
         }
@@ -622,25 +598,41 @@ namespace Framework.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("SocketListener Disconnected event error:" + ex.ToString());
+                    logger.Error("SocketListener Disconnected event error:{0}", ex);
                 }
             }
         }
 
-        /// <inheritdoc />
+        private void CheckInitialized()
+        {
+            if (initialized)
+            {
+                throw new InvalidOperationException("initialized");
+            }
+        }
+
+        /// <summary>
+        /// Check object disposed.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException" />
         protected void CheckDisposed()
         {
             if (IsDisposed)
+            {
                 throw new ObjectDisposedException(GetType().FullName);
+            }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (Interlocked.CompareExchange(ref isInDisposing, ActiveSentinel, NoneSentinel) == NoneSentinel)
             {
                 Connected = null;
-                DataReceived = null;
+                Received = null;
                 Disconnected = null;
 
                 Stop();
@@ -656,34 +648,43 @@ namespace Framework.Net.Sockets
         /// <summary>
         /// Start Listener
         /// </summary>
-        /// <exception cref="System.InvalidOperationException" />
-        /// <exception cref="System.ObjectDisposedException" />
+        /// <exception cref="InvalidOperationException" />
+        /// <exception cref="ObjectDisposedException" />
         /// <exception cref="SocketException" />
         public void Start()
         {
             CheckDisposed();
-            if (IsActived)
+            if (Interlocked.CompareExchange(ref isInActivating, ActiveSentinel, NoneSentinel) != NoneSentinel)
                 throw new InvalidOperationException("actived");
+
+            if (!initialized)
+            {
+                initialized = true;
+                var numOfSaeaForRecSend = maxConnections * 2;
+                var bufferCapacity = numOfSaeaForRecSend * bufferSize;
+                bufferManager = new BufferManager(bufferCapacity, bufferSize);
+                for (int i = 0; i < numOfSaeaForRecSend; i++)
+                {
+                    var ioEventArgs = new SocketAsyncEventArgs();
+                    bufferManager.SetBuffer(ioEventArgs);
+                    ioEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
+
+                    var dataToken = new DataToken();
+                    ioEventArgs.UserToken = dataToken;
+                    ioEventArgsPool.Push(ioEventArgs);
+                }
+            }
 
             try
             {
-                isInActivating = ActiveSentinel;
-                var localEndPoint = listenEndPoint;
-                socket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                socket.Bind(localEndPoint);
-                socket.Listen(backlog);
+                listenSocket = new Socket(listenEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                listenSocket.Bind(listenEndPoint);
+                listenSocket.Listen(backlog);
             }
             catch (SocketException)
             {
                 Stop();
                 throw;
-            }
-
-            var bufferCapacity = maxConnections * 2 * bufferSize;
-            bufferManager = new BufferManager(bufferCapacity, bufferSize);
-            foreach (var ioEventArgs in ioEventArgsPool)
-            {
-                bufferManager.SetBuffer(ioEventArgs);
             }
 
             PostAccept();
@@ -692,22 +693,26 @@ namespace Framework.Net.Sockets
         /// <summary>
         /// Stop Listener
         /// </summary>
-        /// <exception cref="System.ObjectDisposedException" />
+        /// <exception cref="ObjectDisposedException" />
         public void Stop()
         {
             if (Interlocked.CompareExchange(ref isInActivating, NoneSentinel, ActiveSentinel) == ActiveSentinel)
             {
-                var oldSocket = socket;
-                if (oldSocket != null)
+                var socket = listenSocket;
+                if (socket != null)
                 {
                     try
                     {
-                        oldSocket.Close();
-                        oldSocket.Dispose();
+                        socket.Close();
+                        socket.Dispose();
                     }
                     catch (SocketException ex)
                     {
                         logger.Error("SocketListener Stop error:{0}", ex);
+                    }
+                    finally
+                    {
+                        listenSocket = null;
                     }
                 }
             }
@@ -723,6 +728,7 @@ namespace Framework.Net.Sockets
         /// <exception cref="ArgumentNullException" />
         /// <exception cref="ArgumentOutOfRangeException" />
         /// <exception cref="SocketException" />
+        /// <exception cref="ObjectDisposedException" />
         public void Send(ExSocket socket, byte[] data, int offset, int count)
         {
             if (socket == null)
@@ -747,22 +753,27 @@ namespace Framework.Net.Sockets
                     }
 
                     ioEventArgs.AcceptSocket = socket.WorkSocket;
-                    statistics.sendConcurrencyCounter.Increment();
+                    statistics.SendConcurrencyCounter.Increment();
                     TryDequeueAndPostSend(socket, ioEventArgs);
                 }
             }
             else
             {
-                int length = 0;
+                int length;
                 int influenced;
-                statistics.sendConcurrencyCounter.Increment();
-                while (length < buffer.Length)
+
+                offset = 0;
+                count = buffer.Length;
+                statistics.SendConcurrencyCounter.Increment();
+                while (offset < count)
                 {
-                    influenced = buffer.Length - length;
-                    length += socket.WorkSocket.Send(buffer, length, influenced, SocketFlags.None);
+                    influenced = count - offset;
+                    length = socket.WorkSocket.Send(buffer, offset, influenced, SocketFlags.None);
+                    offset += length;
+                    statistics.SentBytesTotalCounter.IncrementBy(length);
                 }
 
-                statistics.sendConcurrencyCounter.Decrement();
+                statistics.SendConcurrencyCounter.Decrement();
             }
         }
 
@@ -773,10 +784,15 @@ namespace Framework.Net.Sockets
         /// <param name="data"></param>
         /// <param name="offset"></param>
         /// <exception cref="ArgumentNullException" />
+        /// <exception cref="ArgumentOutOfRangeException" />
+        /// <exception cref="SocketException" />
+        /// <exception cref="ObjectDisposedException" />
         public void Send(ExSocket socket, byte[] data, int offset)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
             Send(socket, data, offset, data.Length - offset);
         }
@@ -787,6 +803,9 @@ namespace Framework.Net.Sockets
         /// <param name="socket"></param>
         /// <param name="data"></param>
         /// <exception cref="ArgumentNullException" />
+        /// <exception cref="ArgumentOutOfRangeException" />
+        /// <exception cref="SocketException" />
+        /// <exception cref="ObjectDisposedException" />
         public void Send(ExSocket socket, byte[] data)
         {
             if (data == null)

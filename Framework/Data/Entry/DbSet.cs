@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Framework.Data.Entry
 {
@@ -10,7 +9,7 @@ namespace Framework.Data.Entry
         private readonly DbContext dbContext;
         private readonly Type entityType;
         private readonly IEntitySchema entitySchema;
-        private readonly Dictionary<T, RowEntry> entityStore = new Dictionary<T, RowEntry>();
+        private readonly Dictionary<T, RowEntry> rowEntries = new Dictionary<T, RowEntry>();
 
         internal DbSet(DbContext dbContext, Type entityType, IEntitySchema entitySchema)
         {
@@ -25,49 +24,49 @@ namespace Framework.Data.Entry
 
         public IEntitySchema EntitySchema => entitySchema;
 
-        public int Count => entityStore.Count;
+        public int Count => rowEntries.Count;
+
+        public IReadOnlyCollection<RowEntry> RowEntries => rowEntries.Values;
 
         private RowEntry GetRowEntry(T entity)
         {
-            if (!entityStore.TryGetValue(entity, out RowEntry entry))
+            if (!rowEntries.TryGetValue(entity, out RowEntry entry))
             {
                 entry = new RowEntry(entity, EntityState.Unchanged);
-                entityStore[entity] = entry;
+                rowEntries[entity] = entry;
             }
 
             return entry;
         }
 
-        public RowEntry[] GetRowEntries()
-        {
-            return entityStore.Values.ToArray();
-        }
-
-        public void Add(T entity)
+        public RowEntry Add(T entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
             var entry = GetRowEntry(entity);
             entry.State = EntityState.Added;
+            return entry;
         }
 
-        public void Modify(T entity)
+        public RowEntry Modify(T entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
             var entry = GetRowEntry(entity);
             entry.State = EntityState.Modified;
+            return entry;
         }
 
-        public void Remove(T entity)
+        public RowEntry Remove(T entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
             var entry = GetRowEntry(entity);
             entry.State = EntityState.Deleted;
+            return entry;
         }
 
         public void AddRange(IEnumerable<T> entities)
@@ -111,42 +110,57 @@ namespace Framework.Data.Entry
 
         public void Clear()
         {
-            foreach (var entry in entityStore.Values)
+            foreach (var entry in rowEntries.Values)
             {
                 entry.State = EntityState.Detached;
             }
 
-            entityStore.Clear();
+            rowEntries.Clear();
         }
 
-        void IDbSet.Add(object entity)
+        RowEntry IDbSet.Add(object entity)
         {
-            Add((T)entity);
+            if (entity is T other) return Add(other);
+            else throw new InvalidCastException();
         }
 
-        void IDbSet.Modify(object entity)
+        RowEntry IDbSet.Modify(object entity)
         {
-            Modify((T)entity);
+            if (entity is T other) return Modify(other);
+            else throw new InvalidCastException();
         }
 
-        void IDbSet.Remove(object entity)
+        RowEntry IDbSet.Remove(object entity)
         {
-            Remove((T)entity);
+            if (entity is T other) return Remove(other);
+            else throw new InvalidCastException();
         }
 
         void IDbSet.AddRange(IEnumerable<object> entities)
         {
-            AddRange((IEnumerable<T>)entities);
+            foreach (var entity in entities)
+            {
+                if (entity is T other) Add(other);
+                else throw new InvalidCastException();
+            }
         }
 
         void IDbSet.ModifyRange(IEnumerable<object> entities)
         {
-            ModifyRange((IEnumerable<T>)entities);
+            foreach (var entity in entities)
+            {
+                if (entity is T other) Modify(other);
+                else throw new InvalidCastException();
+            }
         }
 
         void IDbSet.RemoveRange(IEnumerable<object> entities)
         {
-            RemoveRange((IEnumerable<T>)entities);
+            foreach (var entity in entities)
+            {
+                if (entity is T other) Remove(other);
+                else throw new InvalidCastException();
+            }
         }
     }
 }

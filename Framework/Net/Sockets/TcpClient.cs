@@ -30,7 +30,7 @@ namespace Framework.Net.Sockets
         private TimeSpan connectTimeout;
         private TimeSpan sendTimeout;
         private TimeSpan receiveTimeout;
-        private ExSocket exSocket;
+        private ExSocket? exSocket;
 
         /// <inheritdoc />
         public TcpClient(IPacketProcessor packetProcessor)
@@ -277,17 +277,17 @@ namespace Framework.Net.Sockets
         /// <summary>
         /// Connected event
         /// </summary>
-        public event EventHandler<SocketEventArgs> Connected;
-
-        /// <summary>
-        /// Disconnected event
-        /// </summary>
-        public event EventHandler<SocketEventArgs> Disconnected;
+        public event EventHandler<SocketEventArgs>? Connected;
 
         /// <summary>
         /// DataReceived event
         /// </summary>
-        public event EventHandler<SocketEventArgs> DataReceived;
+        public event EventHandler<SocketEventArgs>? Received;
+
+        /// <summary>
+        /// Disconnected event
+        /// </summary>
+        public event EventHandler<SocketEventArgs>? Disconnected;
 
         private Socket CreateSocket(EndPoint endpoint)
         {
@@ -340,8 +340,8 @@ namespace Framework.Net.Sockets
         /// <summary>
         /// Connect
         /// </summary>
-        /// <exception cref="System.Net.Sockets.SocketException"></exception>
-        /// <exception cref="System.ObjectDisposedException"></exception>
+        /// <exception cref="SocketException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
         public void Connect(EndPoint endpoint)
         {
             if (endpoint == null)
@@ -384,8 +384,8 @@ namespace Framework.Net.Sockets
         /// <summary>
         /// Async connect
         /// </summary>
-        /// <exception cref="System.Net.Sockets.SocketException"></exception>
-        /// <exception cref="System.ObjectDisposedException"></exception>
+        /// <exception cref="SocketException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
         public void ConnectAsync(EndPoint endpoint)
         {
             if (endpoint == null)
@@ -413,7 +413,7 @@ namespace Framework.Net.Sockets
         /// <summary>
         /// Close connection
         /// </summary>
-        /// <exception cref="System.ObjectDisposedException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
         public void Close()
         {
             if (IsDisposed)
@@ -455,7 +455,6 @@ namespace Framework.Net.Sockets
         private void ConnectCompleted(Socket workSocket)
         {
             var newSocket = new ExSocket(workSocket);
-            newSocket.LastAccessTime = DateTime.Now;
             if (sendOperation == SocketOperation.Asynchronization || receiveOperation == SocketOperation.Asynchronization)
             {
                 var dataToken = new DataToken();
@@ -477,9 +476,7 @@ namespace Framework.Net.Sockets
                 recvEventArgs.SetBuffer(buffer, 0, buffer.Length);
                 recvEventArgs.AcceptSocket = newSocket.WorkSocket;
 
-                var context = new Context();
-                context.sendEventArgs = sendEventArgs;
-                context.recvEventArgs = recvEventArgs;
+                var context = new Context(sendEventArgs, recvEventArgs);
                 newSocket.UserToken = context;
             }
 
@@ -527,7 +524,7 @@ namespace Framework.Net.Sockets
             }
             while (packetStreamer.TryDequeue(out byte[] bytes))
             {
-                NotifyDataReceivedEvent(new SocketEventArgs(exSocket, SocketError.Success, bytes));
+                NotifyReceivedEvent(new SocketEventArgs(exSocket, SocketError.Success, bytes));
             }
             if (exSocket.IsClosed)
             {
@@ -551,8 +548,8 @@ namespace Framework.Net.Sockets
         /// <param name="data"></param>
         /// <param name="offset"></param>
         /// <param name="count"></param>
-        /// <exception cref="System.Net.Sockets.SocketException"></exception>
-        /// <exception cref="System.ObjectDisposedException"></exception>
+        /// <exception cref="SocketException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
         public void Send(byte[] data, int offset, int count)
         {
             if (data == null)
@@ -611,8 +608,8 @@ namespace Framework.Net.Sockets
         /// Send
         /// </summary>
         /// <param name="data"></param>
-        /// <exception cref="System.Net.Sockets.SocketException"></exception>
-        /// <exception cref="System.ObjectDisposedException"></exception>
+        /// <exception cref="SocketException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
         public void Send(byte[] data)
         {
             if (data == null)
@@ -624,8 +621,8 @@ namespace Framework.Net.Sockets
         /// <summary>
         /// Receive
         /// </summary>
-        /// <exception cref="System.Net.Sockets.SocketException"></exception>
-        /// <exception cref="System.ObjectDisposedException"></exception>
+        /// <exception cref="SocketException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.Synchronized)]
         public byte[] Receive()
@@ -659,7 +656,7 @@ namespace Framework.Net.Sockets
                 offset += workSocket.Receive(buffer, offset, count, SocketFlags.None);
             }
 
-            NotifyDataReceivedEvent(new SocketEventArgs(exSocket, SocketError.Success, buffer));
+            NotifyReceivedEvent(new SocketEventArgs(exSocket, SocketError.Success, buffer));
             return buffer;
         }
 
@@ -669,8 +666,8 @@ namespace Framework.Net.Sockets
             {
                 var dataToken = (DataToken)ioEventArgs.UserToken;
                 dataToken.Socket = socket;
-                dataToken.byteArrayForMessage = data;
-                dataToken.messageLength = data.Length;
+                dataToken.ByteArrayForMessage = data;
+                dataToken.MessageLength = data.Length;
 
                 PostSend(ioEventArgs);
             }
@@ -679,9 +676,9 @@ namespace Framework.Net.Sockets
         private void PostSend(SocketAsyncEventArgs ioEventArgs)
         {
             var dataToken = (DataToken)ioEventArgs.UserToken;
-            var copyedBytes = Math.Min(bufferSize, dataToken.messageLength - dataToken.messageBytesDone);
+            var copyedBytes = Math.Min(bufferSize, dataToken.MessageLength - dataToken.MessageBytesDone);
             ioEventArgs.SetBuffer(ioEventArgs.Offset, copyedBytes);
-            Buffer.BlockCopy(dataToken.byteArrayForMessage, dataToken.messageBytesDone, ioEventArgs.Buffer, ioEventArgs.Offset, copyedBytes);
+            Buffer.BlockCopy(dataToken.ByteArrayForMessage, dataToken.MessageBytesDone, ioEventArgs.Buffer, ioEventArgs.Offset, copyedBytes);
 
             bool willRaiseEvent;
             try
@@ -705,8 +702,8 @@ namespace Framework.Net.Sockets
             if (ioEventArgs.SocketError == SocketError.Success)
             {
                 //异常全部放在接收逻辑中处理，发送逻辑忽略
-                dataToken.messageBytesDone += ioEventArgs.BytesTransferred;
-                if (dataToken.messageBytesDone < dataToken.messageLength)
+                dataToken.MessageBytesDone += ioEventArgs.BytesTransferred;
+                if (dataToken.MessageBytesDone < dataToken.MessageLength)
                 {
                     PostSend(ioEventArgs);
                 }
@@ -744,23 +741,23 @@ namespace Framework.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("TcpClient Connected event error:" + ex.ToString());
+                    logger.Error("TcpClient Connected event error:{0}", ex);
                 }
             }
         }
 
-        private void NotifyDataReceivedEvent(SocketEventArgs e)
+        private void NotifyReceivedEvent(SocketEventArgs e)
         {
-            var dataReceive = DataReceived;
-            if (dataReceive != null)
+            var received = Received;
+            if (received != null)
             {
                 try
                 {
-                    dataReceive(this, e);
+                    received(this, e);
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("TcpClient DataReceived event error:" + ex.ToString());
+                    logger.Error("TcpClient Received event error:{0}", ex);
                 }
             }
         }
@@ -776,7 +773,7 @@ namespace Framework.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("TcpClient Disconnected event error:" + ex.ToString());
+                    logger.Error("TcpClient Disconnected event error:{0}", ex);
                 }
             }
         }
@@ -789,7 +786,7 @@ namespace Framework.Net.Sockets
                 try
                 {
                     Connected = null;
-                    DataReceived = null;
+                    Received = null;
                     Disconnected = null;
 
                     exSocket?.Close();
@@ -803,8 +800,14 @@ namespace Framework.Net.Sockets
 
         class Context : BaseDisposed
         {
-            public SocketAsyncEventArgs sendEventArgs;
-            public SocketAsyncEventArgs recvEventArgs;
+            public readonly SocketAsyncEventArgs sendEventArgs;
+            public readonly SocketAsyncEventArgs recvEventArgs;
+
+            public Context(SocketAsyncEventArgs sendEventArgs, SocketAsyncEventArgs recvEventArgs)
+            {
+                this.sendEventArgs = sendEventArgs;
+                this.recvEventArgs = recvEventArgs;
+            }
 
             private void ReleaseIOEventArgs(SocketAsyncEventArgs ioEventArgs)
             {

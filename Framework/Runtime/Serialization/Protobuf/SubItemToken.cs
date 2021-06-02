@@ -1,6 +1,6 @@
 ﻿namespace Framework.Runtime.Serialization.Protobuf
 {
-    public readonly struct SubItemToken
+    public readonly ref struct SubItemToken
     {
         internal readonly uint depth;
         internal readonly uint value;

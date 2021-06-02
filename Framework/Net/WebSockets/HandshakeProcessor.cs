@@ -131,16 +131,16 @@ namespace Framework.Net.WebSockets
 
         internal HandshakeResult Receive(SocketAsyncEventArgs ioEventArgs, WSDataToken dataToken, byte[] data)
         {
-            if (dataToken.byteArrayForHandshake == null)
+            if (dataToken.ByteArrayForHandshake == null)
             {
-                dataToken.byteArrayForHandshake = new List<byte>(data);
+                dataToken.ByteArrayForHandshake = new List<byte>(data);
             }
             else
             {
-                dataToken.byteArrayForHandshake.AddRange(data);
+                dataToken.ByteArrayForHandshake.AddRange(data);
             }
             var socket = (WebSocket)dataToken.Socket;
-            var buffer = dataToken.byteArrayForHandshake.ToArray();
+            var buffer = dataToken.ByteArrayForHandshake.ToArray();
             int headLength = MathUtils.IndexOf(buffer, HandshakeEndBytes);
             if (headLength < 0)
             {
@@ -184,20 +184,20 @@ namespace Framework.Net.WebSockets
                         //TraceLog.ReleaseWriteDebug("Client {0} handshake fail, message:\r\n{2}", session.Socket.RemoteEndPoint, message);
                         return HandshakeResult.Close;
                     }
-                    dataToken.byteArrayForHandshake = null;
+                    dataToken.ByteArrayForHandshake = null;
                     socket.Handshake.Handshaked = true;
                     return HandshakeResult.Success;
                 }
                 if (CheckSignKey(handshakeData))
                 {
-                    dataToken.byteArrayForHandshake = null;
+                    dataToken.ByteArrayForHandshake = null;
                     socket.Handshake.Handshaked = true;
                     return HandshakeResult.Success;
                 }
                 return HandshakeResult.Close;
             }
 
-            logger.Warn("Client {0} handshake {1}error, detail\r\n{2}", socket.RemoteEndPoint, error, message);
+            logger.Warn("Client {0} handshake {1} error, detail\r\n{2}", socket.RemoteEndPoint, error, message);
             return HandshakeResult.Close;
         }
     }

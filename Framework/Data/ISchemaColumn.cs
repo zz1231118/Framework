@@ -11,6 +11,11 @@ namespace Framework.Data
         int Order { get; }
 
         /// <summary>
+        /// 表名
+        /// </summary>
+        string Table { get; }
+
+        /// <summary>
         /// 列名
         /// </summary>
         string Name { get; }
@@ -24,11 +29,6 @@ namespace Framework.Data
         /// Db映射类型
         /// </summary>
         DbType DbType { get; }
-
-        /// <summary>
-        /// 表名
-        /// </summary>
-        string Table { get; }
 
         /// <summary>
         /// 属性类型
@@ -46,6 +46,16 @@ namespace Framework.Data
         Type ReflectedType { get; }
 
         /// <summary>
+        /// 实体转换类型
+        /// </summary>
+        Type ConverterType { get; }
+
+        /// <summary>
+        /// 读写模式
+        /// </summary>
+        ColumnMode Mode { get; }
+
+        /// <summary>
         /// 是否支持可读
         /// </summary>
         bool CanRead { get; }
@@ -59,11 +69,6 @@ namespace Framework.Data
         /// 列允许为空
         /// </summary>
         bool IsNullable { get; }
-
-        /// <summary>
-        /// 读写模式
-        /// </summary>
-        ColumnModel Model { get; }
 
         /// <summary>
         /// 是否主键
@@ -88,17 +93,12 @@ namespace Framework.Data
         /// <summary>
         /// 默认值表达式
         /// </summary>
-        string DefaultValue { get; }
-
-        /// <summary>
-        /// 实体转换类型
-        /// </summary>
-        Type ConvertType { get; }
+        string? DefaultValue { get; }
 
         /// <summary>
         /// 获取值
         /// </summary>
-        object GetValue(object obj);
+        object? GetValue(object obj);
 
         /// <summary>
         /// 设置值

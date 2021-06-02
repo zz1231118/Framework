@@ -26,7 +26,7 @@ namespace Framework.JavaScript
         /// JsonObject 构造函数
         /// </summary>
         /// <param name="capacity">可包含的初始元素数</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public JsonObject(int capacity)
         {
             if (capacity < 0)
@@ -39,7 +39,7 @@ namespace Framework.JavaScript
         /// JsonObject 构造函数
         /// </summary>
         /// <param name="dictionary">初始元素</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public JsonObject(IDictionary<string, Json> dictionary)
         {
             if (dictionary == null)
@@ -51,40 +51,44 @@ namespace Framework.JavaScript
         /// <summary>
         /// JsonObject 构造函数
         /// </summary>
-        /// <param name="value"></param>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        public JsonObject(params KeyValuePair<string, Json>[] value)
+        /// <param name="collection"></param>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public JsonObject(params KeyValuePair<string, Json>[] collection)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             dictionary = new Dictionary<string, Json>();
-            foreach (var pair in value)
-                dictionary.Add(pair.Key, pair.Value);
+            foreach (var entry in collection)
+            {
+                dictionary.Add(entry.Key, entry.Value);
+            }
         }
 
         /// <summary>
         /// JsonObject 构造函数
         /// </summary>
-        /// <param name="value"></param>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        public JsonObject(IEnumerable<KeyValuePair<string, Json>> value)
+        /// <param name="collection"></param>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public JsonObject(IEnumerable<KeyValuePair<string, Json>> collection)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             dictionary = new Dictionary<string, Json>();
-            foreach (var pair in value)
-                dictionary.Add(pair.Key, pair.Value);
+            foreach (var entry in collection)
+            {
+                dictionary.Add(entry.Key, entry.Value);
+            }
         }
 
         /// <summary>
         /// JsonObject this
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public Json this[string key]
         {
             get => dictionary[key];
@@ -117,17 +121,14 @@ namespace Framework.JavaScript
         /// <summary>
         /// 是否为只读
         /// </summary>
-        bool ICollection<KeyValuePair<string, Json>>.IsReadOnly
-        {
-            get { return (dictionary as ICollection<KeyValuePair<string, Json>>).IsReadOnly; }
-        }
+        bool ICollection<KeyValuePair<string, Json>>.IsReadOnly => false;
 
         /// <summary>
         /// 把指定集合添加到集合
         /// </summary>
         /// <param name="value"></param>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public void AddRange(IEnumerable<KeyValuePair<string, Json>> value)
         {
             if (value == null)
@@ -142,8 +143,8 @@ namespace Framework.JavaScript
         /// <summary>
         /// 将指定的键值添加到字典
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Add(string key, Json value)
         {
             if (key == null)
@@ -191,21 +192,26 @@ namespace Framework.JavaScript
         /// </summary>
         /// <param name="array"></param>
         /// <param name="arrayIndex"></param>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public void CopyTo(KeyValuePair<string, Json>[] array, int arrayIndex)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
+
             var count = dictionary.Count;
             if (arrayIndex >= count)
+            {
                 throw new IndexOutOfRangeException();
+            }
 
+            Json value;
+            string key;
             array = new KeyValuePair<string, Json>[count - arrayIndex];
             for (int i = arrayIndex; i < count; i++)
             {
-                var key = dictionary.ElementAt(i).Key;
-                var value = dictionary.ElementAt(i).Value;
+                key = dictionary.ElementAt(i).Key;
+                value = dictionary.ElementAt(i).Value;
                 array[i - arrayIndex] = new KeyValuePair<string, Json>(key, value);
             }
         }
@@ -228,38 +234,18 @@ namespace Framework.JavaScript
         }
 
         /// <summary>
-        /// 返回表示当前对象的 字节集
-        /// </summary>
-        public override byte[] ToBinary()
-        {
-            var list = new List<byte>();
-            list.Add((byte)JsonTypeCode.Object);
-            list.AddRange(BitConverter.GetBytes(dictionary.Count));
-
-            foreach (var key in dictionary.Keys)
-            {
-                var tempBytes = Jsonetting.Encoding.GetBytes(key);
-                list.AddRange(BitConverter.GetBytes(tempBytes.Length));
-                list.AddRange(tempBytes);
-                list.AddRange(dictionary[key].ToBinary());
-            }
-
-            return list.ToArray();
-        }
-
-        /// <summary>
         /// 返回表示当前对象的 字符串
         /// </summary>
         public override string ToString()
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             builder.Append('{');
             foreach (var key in dictionary.Keys)
             {
                 //原本这边是用(new MyJsonValue(Key)).ToString() 更方便一点，但是，
                 //考虑 类和类之间关联的会太紧密，导致以后不好修改
                 builder.Append("\"");
-                builder.Append(JsonUtility.Transferred(key));
+                builder.Append(JsonUtility.EscapeString(key));
                 builder.Append("\"");
                 builder.Append(":");
                 builder.Append(dictionary[key].ToString());

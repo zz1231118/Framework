@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace Framework.JavaScript
@@ -11,43 +10,41 @@ namespace Framework.JavaScript
     [Serializable]
     public sealed class JsonArray : Json, IList<Json>
     {
-        private readonly List<Json> list;
+        private readonly List<Json> items;
 
         /// <summary>
         /// JsonArray 构造函数
         /// </summary>
         public JsonArray()
         {
-            list = new List<Json>();
+            items = new List<Json>();
         }
 
         /// <summary>
         /// JsonArray 构造函数
         /// </summary>
         /// <param name="capacity"></param>
-        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public JsonArray(int capacity)
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
 
-            list = new List<Json>(capacity);
+            items = new List<Json>(capacity);
         }
 
         /// <summary>
         /// JsonArray 构造函数
         /// </summary>
         /// <param name="collection"></param>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public JsonArray(IEnumerable<Json> collection)
         {
             if (collection == null)
                 throw new ArgumentNullException(nameof(collection));
-            if (collection.Contains(null))
-                throw new ArgumentException(nameof(collection));
 
-            list = new List<Json>(collection);
+            items = new List<Json>(collection);
         }
 
         /// <summary>
@@ -55,32 +52,32 @@ namespace Framework.JavaScript
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public Json this[int index]
         {
             get
             {
-                if (index < 0 || index >= list.Count)
+                if (index < 0 || index >= items.Count)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
-                return list[index];
+                return items[index];
             }
             set
             {
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
-                if (index < 0 || index >= list.Count)
+                if (index < 0 || index >= items.Count)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
-                list[index] = value;
+                items[index] = value;
             }
         }
 
         /// <summary>
         /// 实际包含的元素数
         /// </summary>
-        public int Count => list.Count;
+        public int Count => items.Count;
 
         /// <summary>
         /// 是否为只读
@@ -91,26 +88,26 @@ namespace Framework.JavaScript
         /// 把指定集合添加到列表
         /// </summary>
         /// <param name="collection"></param>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public void AddRange(IEnumerable<Json> collection)
         {
             if (collection == null)
                 throw new ArgumentNullException(nameof(collection));
 
-            list.AddRange(collection);
+            items.AddRange(collection);
         }
 
         /// <summary>
         /// 对 JsonArray 的每个元素执行指定操作
         /// </summary>
         /// <param name="action"></param>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public void ForEach(Action<Json> action)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
 
-            foreach (var item in list)
+            foreach (var item in items)
             {
                 action(item);
             }
@@ -123,21 +120,21 @@ namespace Framework.JavaScript
         /// <returns></returns>
         public int IndexOf(Json item)
         {
-            return list.IndexOf(item);
+            return items.IndexOf(item);
         }
 
         /// <summary>
         /// 把元素插入到指定索引处
         /// </summary>
         /// <param name="index"></param>
-        /// <param name="item"></param>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <param name="value"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Insert(int index, Json value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            list.Insert(index, value);
+            items.Insert(index, value);
         }
 
         /// <summary>
@@ -146,20 +143,20 @@ namespace Framework.JavaScript
         /// <param name="index"></param>
         public void RemoveAt(int index)
         {
-            list.RemoveAt(index);
+            items.RemoveAt(index);
         }
 
         /// <summary>
         /// 把对象添加到列表的结尾
         /// </summary>
-        /// <param name="item"></param>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <param name="value"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Add(Json value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            list.Add(value);
+            items.Add(value);
         }
 
         /// <summary>
@@ -167,17 +164,17 @@ namespace Framework.JavaScript
         /// </summary>
         public void Clear()
         {
-            list.Clear();
+            items.Clear();
         }
 
         /// <summary>
         /// 确定指定项是否存在
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
-        public bool Contains(Json item)
+        public bool Contains(Json value)
         {
-            return list.Contains(item);
+            return items.Contains(value);
         }
 
         /// <summary>
@@ -185,8 +182,8 @@ namespace Framework.JavaScript
         /// </summary>
         /// <param name="array"></param>
         /// <param name="arrayIndex"></param>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public void CopyTo(Json[] array, int arrayIndex)
         {
             if (array == null)
@@ -194,17 +191,17 @@ namespace Framework.JavaScript
             if (arrayIndex >= array.Length)
                 throw new IndexOutOfRangeException();
 
-            list.CopyTo(array, arrayIndex);
+            items.CopyTo(array, arrayIndex);
         }
 
         /// <summary>
         /// 移除指定项
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
-        public bool Remove(Json item)
+        public bool Remove(Json value)
         {
-            return list.Remove(item);
+            return items.Remove(value);
         }
 
         /// <summary>
@@ -213,7 +210,7 @@ namespace Framework.JavaScript
         /// <returns></returns>
         public IEnumerator<Json> GetEnumerator()
         {
-            return list.GetEnumerator();
+            return items.GetEnumerator();
         }
 
         /// <summary>
@@ -222,21 +219,7 @@ namespace Framework.JavaScript
         /// <returns></returns>
         public override object Clone()
         {
-            return new JsonArray(list);
-        }
-
-        /// <summary>
-        /// 返回表示当前对象的 字节集
-        /// </summary>
-        public override byte[] ToBinary()
-        {
-            var list = new List<byte>();
-            list.Add((byte)JsonTypeCode.Array);
-            list.AddRange(BitConverter.GetBytes(this.list.Count));
-            foreach (var item in this.list)
-                list.AddRange(item.ToBinary());
-
-            return list.ToArray();
+            return new JsonArray(items);
         }
 
         /// <summary>
@@ -244,14 +227,14 @@ namespace Framework.JavaScript
         /// </summary>
         public override string ToString()
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             builder.Append('[');
-            if (list.Count > 0)
-                builder.Append(list[0].ToString());
+            if (items.Count > 0)
+                builder.Append(items[0].ToString());
 
-            for (int i = 1; i < list.Count; i++)
+            for (int i = 1; i < items.Count; i++)
             {
-                var json = list[i];
+                var json = items[i];
                 builder.Append(',');
                 builder.Append(json.ToString());
             }
@@ -261,7 +244,7 @@ namespace Framework.JavaScript
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return list.GetEnumerator();
+            return items.GetEnumerator();
         }
     }
 }

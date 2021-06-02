@@ -12,7 +12,7 @@ namespace Framework.Data.MsSql
 {
     internal class MsSqlCommandStruct : DbCommandStruct
     {
-        public MsSqlCommandStruct(string name, DbCommandMode mode, IEnumerable<SqlExpression> columns = null)
+        public MsSqlCommandStruct(string name, DbCommandMode mode, IEnumerable<SqlExpression>? columns = null)
             : base(name, mode, columns)
         { }
 
@@ -203,7 +203,7 @@ namespace Framework.Data.MsSql
 
     internal class MsSqlDbCommandStruct<T> : MsSqlCommandStruct, IDbCommandStruct<T>
     {
-        public MsSqlDbCommandStruct(string name, DbCommandMode mode, IEnumerable<SqlExpression> columns = null)
+        public MsSqlDbCommandStruct(string name, DbCommandMode mode, IEnumerable<SqlExpression>? columns = null)
             : base(name, mode, columns)
         { }
 

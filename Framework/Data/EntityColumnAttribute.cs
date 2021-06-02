@@ -6,12 +6,92 @@ using Framework.Data.Converters;
 namespace Framework.Data
 {
     [AttributeUsage(AttributeTargets.Property)]
-    public class EntityColumnAttribute : PropertyAttribute
+    public class EntityColumnAttribute : Attribute
     {
-        private string name;
+        private PropertyInfo? propertyInfo;
+        private string? name;
         private DbType? dbType;
-        private Type converterType;
-        private IEntityConverter entityConverter;
+        private Type? converterType;
+        private IEntityConverter? entityConverter;
+
+        /// <summary>
+        /// 属性信息
+        /// </summary>
+        public PropertyInfo PropertyInfo
+        { 
+            get => propertyInfo ?? throw new InvalidOperationException("PropertyInfo should not be null"); 
+            internal set => propertyInfo = value;
+        }
+
+        /// <summary>
+        /// 获取成员返回类型
+        /// </summary>
+        public Type PropertyType
+        {
+            get
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
+
+                return propertyInfo.PropertyType;
+            }
+        }
+
+        /// <summary>
+        /// 获取声明该成员的类
+        /// </summary>
+        public Type DeclaringType
+        {
+            get
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
+
+                return propertyInfo.DeclaringType;
+            }
+        }
+
+        /// <summary>
+        /// 获取用于获取此成员的此实例的类对象
+        /// </summary>
+        public Type ReflectedType
+        {
+            get
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
+
+                return propertyInfo.ReflectedType;
+            }
+        }
+
+        /// <summary>
+        /// 是否支持可读
+        /// </summary>
+        public bool CanRead
+        {
+            get
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
+
+                return propertyInfo.CanRead;
+            }
+        }
+
+        /// <summary>
+        /// 是否支持可写
+        /// </summary>
+        public bool CanWrite
+        {
+            get
+            {
+                if (propertyInfo == null)
+                    throw new InvalidOperationException("PropertyInfo should not be null");
+
+                return propertyInfo.CanWrite;
+            }
+        }
 
         /// <summary>
         /// 字段名
@@ -22,10 +102,10 @@ namespace Framework.Data
             {
                 if (name == null)
                 {
-                    if (PropertyInfo == null)
-                        throw new InvalidOperationException("PropertyInfo is null!");
+                    if (propertyInfo == null)
+                        throw new InvalidOperationException("PropertyInfo should not be null");
 
-                    name = PropertyInfo.Name;
+                    name = propertyInfo.Name;
                 }
                 return name;
             }
@@ -35,7 +115,7 @@ namespace Framework.Data
         /// <summary>
         /// 所属的表名
         /// </summary>
-        public string Table { get; set; }
+        public string? Table { get; set; }
 
         /// <summary>
         /// 是否主键
@@ -50,7 +130,7 @@ namespace Framework.Data
         /// <summary>
         /// 读写模式
         /// </summary>
-        public ColumnModel Model { get; set; } = ColumnModel.ReadWrite;
+        public ColumnMode Mode { get; set; } = ColumnMode.ReadWrite;
 
         /// <summary>
         /// 是否唯一
@@ -75,7 +155,7 @@ namespace Framework.Data
         /// <summary>
         /// 默认值表达式
         /// </summary>
-        public string DefaultValue { get; set; }
+        public string? DefaultValue { get; set; }
 
         /// <summary>
         /// 禁用或排除数据库取值
@@ -98,7 +178,7 @@ namespace Framework.Data
                 {
                     var converter = GetEntityConverter();
                     var mappingType = converter != null ? converter.GetMappingType(PropertyType) : PropertyType;
-                    dbType = EntityConverterSet.GetDefaultDbType(mappingType);
+                    dbType = EntityConverterManager.GetDefaultDbType(mappingType);
                 }
 
                 return dbType.Value;
@@ -109,60 +189,28 @@ namespace Framework.Data
         /// <summary>
         /// 转换器
         /// </summary>
-        public Type ConvertType
+        public Type ConverterType
         {
             get
             {
                 if (converterType == null)
                 {
                     var propertyType = PropertyType.IsEnum ? typeof(Enum) : PropertyType;
-                    converterType = EntityConverterSet.GetDefaultEntityConverterType(propertyType);
+                    converterType = EntityConverterManager.GetDefaultEntityConverterType(propertyType);
                 }
                 return converterType;
             }
             set { converterType = value; }
         }
 
-        private IEntityConverter GetEntityConverter()
+        private IEntityConverter? GetEntityConverter()
         {
-            if (ConvertType != null && entityConverter == null)
+            if (ConverterType != null && entityConverter == null)
             {
-                entityConverter = EntityConverterSet.Gain(ConvertType);
+                entityConverter = EntityConverterManager.Gain(ConverterType);
             }
 
             return entityConverter;
-        }
-
-        public override void SetValue(object obj, object value, object[] index)
-        {
-            var converter = GetEntityConverter();
-            if (converter != null)
-            {
-                value = converter.ConvertTo(value, PropertyType);
-            }
-            if (value != null)
-            {
-                if (typeof(IConvertible).IsAssignableFrom(PropertyType))
-                {
-                    if (value.GetType() != PropertyType)
-                    {
-                        value = Convert.ChangeType(value, PropertyType);
-                    }
-                }
-            }
-            base.SetValue(obj, value, index);
-        }
-
-        public override object GetValue(object obj, object[] index)
-        {
-            var value = base.GetValue(obj, index);
-            var converter = GetEntityConverter();
-            if (converter != null)
-            {
-                var tType = EntityUtils.ConvertToType(PropertyType);
-                value = converter.ConvertFrom(value, tType);
-            }
-            return value;
         }
     }
 }

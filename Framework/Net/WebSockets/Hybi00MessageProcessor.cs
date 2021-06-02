@@ -35,7 +35,7 @@ namespace Framework.Net.WebSockets
                 {
                     return false;
                 }
-                byte[] data = dataToken.byteArrayForMessage;
+                byte[] data = dataToken.ByteArrayForMessage;
                 if (data != null)
                 {
                     messageList.Add(new DataMessage() { Data = data, Opcode = Opcode.Text });
@@ -81,22 +81,22 @@ namespace Framework.Net.WebSockets
 
         private bool CheckPrefixHeadComplated(WSDataToken dataToken, byte[] buffer, ref int offset)
         {
-            if (dataToken.byteArrayForPrefix == null || dataToken.byteArrayForPrefix.Length != PreByteLength)
+            if (dataToken.ByteArrayForPrefix == null || dataToken.ByteArrayForPrefix.Length != PreByteLength)
             {
-                dataToken.byteArrayForPrefix = new byte[PreByteLength];
+                dataToken.ByteArrayForPrefix = new byte[PreByteLength];
             }
-            if (PreByteLength - dataToken.prefixBytesDone > buffer.Length - offset)
+            if (PreByteLength - dataToken.PrefixBytesDone > buffer.Length - offset)
             {
-                Buffer.BlockCopy(buffer, offset, dataToken.byteArrayForPrefix, dataToken.prefixBytesDone, buffer.Length - offset);
-                dataToken.prefixBytesDone += buffer.Length - offset;
+                Buffer.BlockCopy(buffer, offset, dataToken.ByteArrayForPrefix, dataToken.PrefixBytesDone, buffer.Length - offset);
+                dataToken.PrefixBytesDone += buffer.Length - offset;
                 return false;
             }
 
-            int count = dataToken.byteArrayForPrefix.Length - dataToken.prefixBytesDone;
+            int count = dataToken.ByteArrayForPrefix.Length - dataToken.PrefixBytesDone;
             if (count > 0)
             {
-                Buffer.BlockCopy(buffer, offset, dataToken.byteArrayForPrefix, dataToken.prefixBytesDone, count);
-                dataToken.prefixBytesDone += count;
+                Buffer.BlockCopy(buffer, offset, dataToken.ByteArrayForPrefix, dataToken.PrefixBytesDone, count);
+                dataToken.PrefixBytesDone += count;
                 offset += count;
             }
             return true;
@@ -131,13 +131,13 @@ namespace Framework.Net.WebSockets
             {
                 data = new byte[buffer.Length - offset];
                 Buffer.BlockCopy(buffer, offset, data, 0, data.Length);
-                if (dataToken.byteArrayForMessage == null)
+                if (dataToken.ByteArrayForMessage == null)
                 {
-                    dataToken.byteArrayForMessage = data;
+                    dataToken.ByteArrayForMessage = data;
                 }
                 else
                 {
-                    dataToken.byteArrayForMessage = MergeBytes(dataToken.byteArrayForMessage, data);
+                    dataToken.ByteArrayForMessage = MergeBytes(dataToken.ByteArrayForMessage, data);
                 }
                 offset += data.Length;
                 return false;
@@ -150,7 +150,7 @@ namespace Framework.Net.WebSockets
             }
             data = new byte[endMaskIndex - offset];
             Buffer.BlockCopy(buffer, offset, data, 0, data.Length);
-            dataToken.byteArrayForMessage = MergeBytes(dataToken.byteArrayForMessage, data);
+            dataToken.ByteArrayForMessage = MergeBytes(dataToken.ByteArrayForMessage, data);
             offset += data.Length + 1;
             return true;
         }

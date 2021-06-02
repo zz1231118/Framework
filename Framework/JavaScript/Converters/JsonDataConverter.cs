@@ -11,9 +11,9 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 对象到 Json
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
         public static Json TargetToJson(object obj)
         {
@@ -23,7 +23,7 @@ namespace Framework.JavaScript.Converters
             var type = obj.GetType();
             var json = new JsonObject();
             var members = JsonUtility.GetJsonMemberAttributes(type);
-            foreach (var member in members.OrderBy(p => p.ShowIndex))
+            foreach (var member in members)
             {
                 if (member.CanRead)
                 {
@@ -34,15 +34,16 @@ namespace Framework.JavaScript.Converters
 
             return json;
         }
+
         /// <summary>
         /// Json 转换到 对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
         /// <returns></returns>
-        public static object JsonToTarget(Json json, object obj)
+        public static object? JsonToTarget(Json json, object obj)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
@@ -50,10 +51,9 @@ namespace Framework.JavaScript.Converters
                 throw new ArgumentNullException(nameof(obj));
             if (json == Json.Null)
                 return null;
-            if (!(json is JsonObject))
+            if (json is not JsonObject jobj)
                 throw new ArgumentException("JsonDataFormat 转换异常,欲转换的 [Json] 错误!");
 
-            var jobj = json as JsonObject;
             var type = obj.GetType();
             var members = JsonUtility.GetJsonMemberAttributes(type);
             foreach (var member in members)
@@ -71,11 +71,11 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// Json 转换到 对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
         /// <returns></returns>
-        public static object JsonToTarget(Json json, Type conversionType)
+        public static object? JsonToTarget(Json json, Type conversionType)
         {
             if (conversionType == null)
                 throw new ArgumentNullException("JsonDataFormat 转换异常,欲转换的 [Type] 不能为空!");
@@ -87,23 +87,22 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// Json 转换到 对象
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException"></exception>
         /// <returns></returns>
-        public static TObject JsonToTarget<TObject>(Json json)
+        public static TObject? JsonToTarget<TObject>(Json json)
             where TObject : class, new()
         {
             var target = JsonUtility.GetUninitializedObject(typeof(TObject));
-            var result = JsonToTarget(json, target);
-            return result == null ? null : result as TObject;
+            return (TObject?)JsonToTarget(json, target);
         }
 
         /// <summary>
         /// 序列化指定对象
         /// </summary>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonerializerException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
         public Json ConvertFrom(object value, Type conversionType)
         {
             return TargetToJson(value);
@@ -112,42 +111,19 @@ namespace Framework.JavaScript.Converters
         /// <summary>
         /// 反序列化对象
         /// </summary>
-        /// <exception cref="Framework.Jsons.JsonFormatException"></exception>
-        /// <exception cref="Framework.Jsons.JsonException"></exception>
-        /// <exception cref="Framework.Jsons.JsonerializerException"></exception>
-        public object ConvertTo(Json json, Type conversionType)
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="JsonFormatException"></exception>
+        /// <exception cref="JsonSerializerException"></exception>
+        public object? ConvertTo(Json json, Type conversionType)
         {
             return JsonToTarget(json, conversionType);
         }
     }
 
+    /// <inheritdoc />
     public class JsonDataConverter : IJsonConverter
     {
-        public object ConvertTo(Json value, Type conversionType)
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-            if (conversionType == null)
-                throw new ArgumentNullException(nameof(conversionType));
-            if (value == Json.Null)
-                return null;
-            if (!(value is JsonObject json))
-                throw new ArgumentException("JsonDataFormat 转换异常,欲转换的 [Json] 错误!");
-
-            Json jvalue;
-            var obj = JsonUtility.GetUninitializedObject(conversionType);
-            var members = JsonUtility.GetJsonMemberAttributes(conversionType);
-            foreach (var member in members)
-            {
-                if (member.CanWrite && json.TryGetValue(member.Name, out jvalue))
-                {
-                    member.SetValue(obj, jvalue);
-                }
-            }
-
-            return obj;
-        }
-
+        /// <inheritdoc />
         public Json ConvertFrom(object value, Type conversionType)
         {
             if (value == null)
@@ -156,7 +132,7 @@ namespace Framework.JavaScript.Converters
             conversionType = value.GetType();
             var json = new JsonObject();
             var members = JsonUtility.GetJsonMemberAttributes(conversionType);
-            foreach (var member in members.OrderBy(p => p.ShowIndex))
+            foreach (var member in members)
             {
                 if (member.CanRead)
                 {
@@ -166,6 +142,31 @@ namespace Framework.JavaScript.Converters
             }
 
             return json;
+        }
+
+        /// <inheritdoc />
+        public object? ConvertTo(Json value, Type conversionType)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (conversionType == null)
+                throw new ArgumentNullException(nameof(conversionType));
+            if (value == Json.Null)
+                return null;
+            if (value is not JsonObject json)
+                throw new ArgumentException("JsonDataFormat 转换异常,欲转换的 [Json] 错误!");
+
+            var obj = JsonUtility.GetUninitializedObject(conversionType);
+            var members = JsonUtility.GetJsonMemberAttributes(conversionType);
+            foreach (var member in members)
+            {
+                if (member.CanWrite && json.TryGetValue(member.Name, out Json jvalue))
+                {
+                    member.SetValue(obj, jvalue);
+                }
+            }
+
+            return obj;
         }
     }
 }

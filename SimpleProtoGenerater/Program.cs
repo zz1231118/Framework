@@ -34,7 +34,7 @@ namespace SimpleProtoGenerater
                     {
                         var lexer = new Tokenizer(reader);
                         var assembly = BasicParser.Parse(lexer);
-                        assembly.AddReference(typeof(Framework.Runtime.Serialization.Protobuf.ISerializable).Namespace);
+                        assembly.AddReference(typeof(Framework.Runtime.Serialization.Protobuf.IMessage).Namespace);
 
                         var sb = new StringBuilder();
                         assembly.BuildCode(sb);

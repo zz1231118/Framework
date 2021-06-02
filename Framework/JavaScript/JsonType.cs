@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,7 @@ namespace Framework.JavaScript
 
         static JsonType()
         {
-            System.Collections.Generic.List<Type> types = new System.Collections.Generic.List<Type>()
+            var builtTypes = new List<Type>()
             {
                 typeof(int), typeof(uint), typeof(short), typeof(ushort), typeof(long), typeof(ulong),
                 typeof(float), typeof(double), typeof(decimal), typeof(byte), typeof(sbyte), typeof(char),
@@ -23,7 +24,7 @@ namespace Framework.JavaScript
             };
 
             globalTypeCache = new ConcurrentDictionary<string, Type>();
-            foreach (var type in types)
+            foreach (var type in builtTypes)
             {
                 globalTypeCache[type.Name] = type;
             }
@@ -32,21 +33,19 @@ namespace Framework.JavaScript
         /// <summary>
         /// 获取指定 Type名称 的 Type
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        private static Type GetTypeByName(string name)
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        private static Type? GetTypeByName(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name == string.Empty)
                 throw new ArgumentException(nameof(name));
 
-            Type type;
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                type = assembly.GetTypes().FirstOrDefault(p => p.Name.Equals(name));
-                if (type != null)
-                    return type;
+                var type = assembly.GetTypes().FirstOrDefault(p => p.Name.Equals(name));
+                if (type != null) return type;
             }
             return null;
         }
@@ -54,8 +53,8 @@ namespace Framework.JavaScript
         /// <summary>
         /// 当前类型是否是泛型类型
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public static bool IsGenericType(string name)
         {
             if (name == null)
@@ -69,14 +68,16 @@ namespace Framework.JavaScript
         /// <summary>
         /// 获取泛型类型
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        private static Type GetGenericType(string name)
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        private static Type? GetGenericType(string name)
         {
             if (IsGenericType(name))
             {
                 using (var deco = new TypeDecomposition(new StringReader(name)))
+                {
                     return deco.FatherType;
+                }
             }
 
             return null;
@@ -85,16 +86,16 @@ namespace Framework.JavaScript
         /// <summary>
         /// 获取指定 Type名称 的 Type
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        public static Type GetTypeByName(string name, Type consultType = null)
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static Type? GetTypeByName(string name, Type? consultType = null)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name == string.Empty)
                 throw new ArgumentException(nameof(name));
 
-            if (globalTypeCache.TryGetValue(name, out Type typeResult))
+            if (globalTypeCache.TryGetValue(name, out Type? typeResult))
             {
                 return typeResult;
             }
@@ -126,7 +127,7 @@ namespace Framework.JavaScript
         /// <summary>
         /// 获取指定 Type 的 Name
         /// </summary>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public static string GetNameByType(Type type)
         {
             if (type == null)
@@ -157,32 +158,28 @@ namespace Framework.JavaScript
         /// </summary>
         class TypeDecomposition : IDisposable
         {
-            private Type _fatherType;
-            private System.Collections.Generic.List<TypeDecomposition> _generics;
+            private Type? _fatherType;
+            private List<TypeDecomposition>? _generics;
 
             public TypeDecomposition(TextReader reader)
             {
                 Decomposition(reader);
             }
 
-            public Type FatherType
-            {
-                get { return _fatherType; }
-            }
+            public Type? FatherType => _fatherType;
 
             /// <summary>
             /// 分解
             /// </summary>
             private void Decomposition(TextReader reader)
             {
+                var temp = -1;
                 var builder = new StringBuilder();
-                int temp = -1;
-
                 while ((temp = reader.Read()) >= 0)
                 {
                     if (temp == 91)
                     {
-                        _generics = new System.Collections.Generic.List<TypeDecomposition>();
+                        _generics = new List<TypeDecomposition>();
                         var deco = new TypeDecomposition(reader);
                         _generics.Add(deco);
                     }
@@ -202,10 +199,10 @@ namespace Framework.JavaScript
                 _fatherType = JsonType.GetTypeByName(builder.ToString());
                 if (_generics != null && _generics.Count > 0)
                 {
-                    if (this.FatherType != null)
+                    if (_fatherType != null)
                     {
-                        var Types = _generics.Select(p => p.FatherType).ToArray();
-                        _fatherType = this.FatherType.MakeGenericType(Types);
+                        var Types = _generics.Select(p => p._fatherType).ToArray();
+                        _fatherType = _fatherType.MakeGenericType(Types);
                     }
                 }
             }

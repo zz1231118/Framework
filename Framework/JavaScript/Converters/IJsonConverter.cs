@@ -21,6 +21,6 @@ namespace Framework.JavaScript.Converters
         /// <param name="value">欲转换的 Json</param>
         /// <param name="conversionType">欲转换到的对象类型</param>
         /// <returns></returns>
-        object ConvertTo(Json value, Type conversionType);
+        object? ConvertTo(Json value, Type conversionType);
     }
 }

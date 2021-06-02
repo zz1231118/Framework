@@ -17,9 +17,9 @@ namespace Framework.JavaScript
         private const string TimeSpanFormat = @"dd\.hh\:mm\:ss\.fff";
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.fff";
 
-        private readonly object value;
+        private readonly object? value;
 
-        internal JsonValue(object value)
+        internal JsonValue(object? value)
         {
             this.value = value;
         }
@@ -131,7 +131,7 @@ namespace Framework.JavaScript
         /// <summary>
         /// JsonValue 构造函数
         /// </summary>
-        public JsonValue(string value)
+        public JsonValue(string? value)
         {
             this.value = value;
         }
@@ -165,29 +165,39 @@ namespace Framework.JavaScript
         /// </summary>
         public JsonValue(Enum value)
         {
-            if (value == null)
+            if (value != null)
             {
-                this.value = null;
-                return;
+                var enumType = value.GetType();
+                var underlyingType = Enum.GetUnderlyingType(enumType);
+                this.value = Convert.ChangeType(value, underlyingType);
             }
+        }
 
-            var enumType = value.GetType();
-            var underlyingType = Enum.GetUnderlyingType(enumType);
-            this.value = Convert.ChangeType(value, underlyingType);
+        /// <summary>
+        /// JsonValue 构造函数
+        /// </summary>
+        public JsonValue(byte[]? value)
+        {
+            if (value != null)
+            {
+                this.value = ByteConverter.GetString(value);
+            }
         }
 
         /// <summary>
         /// JsonValue 值
         /// </summary>
-        public object Value => value;
+        public object? Value => value;
 
-        public static bool operator ==(JsonValue lhs, JsonValue rhs)
+        /// <inheritdoc />
+        public static bool operator ==(JsonValue? lhs, JsonValue? rhs)
         {
             if (lhs is object && rhs is object) return lhs.value == rhs.value;
             else return ReferenceEquals(lhs, rhs);
         }
 
-        public static bool operator !=(JsonValue lhs, JsonValue rhs)
+        /// <inheritdoc />
+        public static bool operator !=(JsonValue? lhs, JsonValue? rhs)
         {
             if (lhs is object && rhs is object) return lhs.value != rhs.value;
             else return !ReferenceEquals(lhs, rhs);
@@ -198,86 +208,103 @@ namespace Framework.JavaScript
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(byte value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(sbyte value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(short value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(ushort value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(int value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(uint value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(long value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(ulong value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(float value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(double value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(decimal value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(char value)
         {
             return new JsonValue(value.ToString());
         }
+
         /// <inheritdoc />
-        public static implicit operator JsonValue(string value)
+        public static implicit operator JsonValue(string? value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(Guid value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(TimeSpan value)
         {
             return new JsonValue(value);
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(DateTime value)
         {
             return new JsonValue(value.ToString());
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(Enum value)
         {
@@ -289,76 +316,91 @@ namespace Framework.JavaScript
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />>
         public static implicit operator JsonValue(byte? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(sbyte? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(short? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(ushort? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(int? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(uint? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(long? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(ulong? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(float? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(double? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(decimal? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(char? value)
         {
             return value.HasValue ? new JsonValue(value.Value.ToString()) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(Guid? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(TimeSpan? value)
         {
             return value.HasValue ? new JsonValue(value.Value) : (JsonValue)Null;
         }
+
         /// <inheritdoc />
         public static implicit operator JsonValue(DateTime? value)
         {
@@ -366,89 +408,113 @@ namespace Framework.JavaScript
         }
 
         /// <inheritdoc />
+        public static implicit operator JsonValue(byte[]? value)
+        {
+            return new JsonValue(value);
+        }
+
+        /// <inheritdoc />
         public static implicit operator bool(JsonValue value)
         {
-            return (bool)value.value;
+            if (value.value is bool rval) return rval;
+            else throw new InvalidCastException(value.ToString());
         }
+
         /// <inheritdoc />
         public static implicit operator byte(JsonValue value)
         {
             return Convert.ToByte(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator sbyte(JsonValue value)
         {
             return Convert.ToSByte(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator short(JsonValue value)
         {
             return Convert.ToInt16(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator ushort(JsonValue value)
         {
             return Convert.ToUInt16(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator int(JsonValue value)
         {
             return Convert.ToInt32(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator uint(JsonValue value)
         {
             return Convert.ToUInt32(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator long(JsonValue value)
         {
             return Convert.ToInt64(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator ulong(JsonValue value)
         {
             return Convert.ToUInt64(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator float(JsonValue value)
         {
             return Convert.ToSingle(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator double(JsonValue value)
         {
             return Convert.ToDouble(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator decimal(JsonValue value)
         {
             return Convert.ToDecimal(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator char(JsonValue value)
         {
-            return (char)value.value;
+            if (value.value is char rval) return rval;
+            else throw new InvalidCastException(value.ToString());
         }
+
         /// <inheritdoc />
-        public static implicit operator string(JsonValue value)
+        public static implicit operator string?(JsonValue value)
         {
-            return (string)value.value;
+            return (string?)value.value;
         }
+
         /// <inheritdoc />
         public static implicit operator Guid(JsonValue value)
         {
-            return Guid.Parse((string)value.value);
+            return Guid.Parse((string?)value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator TimeSpan(JsonValue value)
         {
-            return TimeSpan.Parse((string)value.value);
+            return TimeSpan.Parse((string?)value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator DateTime(JsonValue value)
         {
-            return DateTime.Parse((string)value.value);
+            return DateTime.Parse((string?)value.value);
         }
 
         /// <inheritdoc />
@@ -456,80 +522,102 @@ namespace Framework.JavaScript
         {
             return value.value == null ? null : (bool?)(bool)value.value;
         }
+
         /// <inheritdoc />
         public static implicit operator byte?(JsonValue value)
         {
             return value.value == null ? null : (byte?)Convert.ToByte(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator sbyte?(JsonValue value)
         {
             return value.value == null ? null : (sbyte?)Convert.ToSByte(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator short?(JsonValue value)
         {
             return value.value == null ? null : (short?)Convert.ToInt16(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator ushort?(JsonValue value)
         {
             return value.value == null ? null : (ushort?)Convert.ToUInt16(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator int?(JsonValue value)
         {
             return value.value == null ? null : (int?)Convert.ToInt32(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator uint?(JsonValue value)
         {
             return value.value == null ? null : (uint?)Convert.ToUInt32(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator long?(JsonValue value)
         {
             return value.value == null ? null : (long?)Convert.ToInt64(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator ulong?(JsonValue value)
         {
             return value.value == null ? null : (ulong?)Convert.ToUInt64(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator float?(JsonValue value)
         {
             return value.value == null ? null : (float?)Convert.ToSingle(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator double?(JsonValue value)
         {
             return value.value == null ? null : (double?)Convert.ToDouble(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator decimal?(JsonValue value)
         {
             return value.value == null ? null : (decimal?)Convert.ToDecimal(value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator char?(JsonValue value)
         {
             return value.value == null ? null : (char?)(char)value.value;
         }
+
         /// <inheritdoc />
         public static implicit operator Guid?(JsonValue value)
         {
             return value.value == null ? null : (Guid?)Guid.Parse((string)value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator TimeSpan?(JsonValue value)
         {
             return value.value == null ? null : (TimeSpan?)TimeSpan.Parse((string)value.value);
         }
+
         /// <inheritdoc />
         public static implicit operator DateTime?(JsonValue value)
         {
             return value.value == null ? null : (DateTime?)DateTime.Parse((string)value.value);
+        }
+
+        /// <inheritdoc />
+        public static implicit operator byte[]?(JsonValue value)
+        {
+            var text = (string?)value.value;
+            return text != null ? ByteConverter.GetBytes(text) : null;
         }
 
         /// <summary>
@@ -541,49 +629,6 @@ namespace Framework.JavaScript
         }
 
         /// <summary>
-        /// 返回表示当前对象的 字节集
-        /// </summary>
-        public override byte[] ToBinary()
-        {
-            var codeType = JsonUtility.GetTypeCode(value);
-            switch (codeType)
-            {
-                case JsonTypeCode.Null:
-                    return new byte[] { (byte)codeType };
-                case JsonTypeCode.Boolean:
-                    return new byte[] { (byte)codeType, (byte)(((bool)value) ? 1 : 0) };
-                case JsonTypeCode.Byte:
-                    return new byte[] { (byte)codeType, (byte)value };
-                case JsonTypeCode.SByte:
-                    return new byte[] { (byte)codeType, (byte)(sbyte)value };
-                case JsonTypeCode.Char:
-                    return JsonUtility.BuildArray(codeType, (short)(char)value);
-                case JsonTypeCode.Int16:
-                    return JsonUtility.BuildArray(codeType, (short)value);
-                case JsonTypeCode.UInt16:
-                    return JsonUtility.BuildArray(codeType, (short)(ushort)value);
-                case JsonTypeCode.Int32:
-                    return JsonUtility.BuildArray(codeType, (int)value);
-                case JsonTypeCode.UInt32:
-                    return JsonUtility.BuildArray(codeType, (int)(uint)value);
-                case JsonTypeCode.Int64:
-                    return JsonUtility.BuildArray(codeType, (long)value);
-                case JsonTypeCode.UInt64:
-                    return JsonUtility.BuildArray(codeType, (long)(ulong)value);
-                case JsonTypeCode.Single:
-                    return JsonUtility.BuildArray(codeType, (float)value);
-                case JsonTypeCode.Double:
-                    return JsonUtility.BuildArray(codeType, (double)value);
-                case JsonTypeCode.Decimal:
-                    return JsonUtility.BuildArray(codeType, (double)(decimal)value);
-                case JsonTypeCode.String:
-                    return JsonUtility.BuildArray(codeType, (string)value);
-                default:
-                    throw new InvalidOperationException(string.Format("Unknown {0}:{1}", nameof(JsonTypeCode), codeType));
-            }
-        }
-
-        /// <summary>
         /// 返回表示当前对象的 字符串
         /// </summary>
         public override string ToString()
@@ -592,7 +637,7 @@ namespace Framework.JavaScript
             {
                 case null: return NullString;
                 case bool other: return other ? TrueString : FalseString;
-                case string other: return QuotationMarkString + JsonUtility.Transferred(other) + QuotationMarkString;
+                case string other: return QuotationMarkString + JsonUtility.EscapeString(other) + QuotationMarkString;
                 default: return value.ToString();
             }
         }
@@ -620,7 +665,8 @@ namespace Framework.JavaScript
 
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
-            return (bool)value;
+            if (value is bool rval) return rval;
+            else throw new InvalidCastException(ToString());
         }
 
         char IConvertible.ToChar(IFormatProvider provider)
@@ -685,7 +731,7 @@ namespace Framework.JavaScript
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            return DateTime.Parse((string)value);
+            return Convert.ToDateTime((string?)value, provider);
         }
 
         string IConvertible.ToString(IFormatProvider provider)
@@ -693,15 +739,17 @@ namespace Framework.JavaScript
             return Convert.ToString(value, provider);
         }
 
-        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
+        object? IConvertible.ToType(Type conversionType, IFormatProvider provider)
         {
             if (conversionType == null)
                 throw new ArgumentNullException(nameof(conversionType));
 
             if (conversionType == typeof(Guid))
-                return Guid.Parse((string)value);
+                return Guid.Parse((string?)value);
             if (conversionType == typeof(TimeSpan))
-                return TimeSpan.Parse((string)value);
+                return TimeSpan.Parse((string?)value, provider);
+            if (conversionType == typeof(byte[]))
+                return (byte[]?)this;
             if (conversionType == typeof(Json))
                 return this;
             if (conversionType == typeof(JsonValue))
@@ -738,7 +786,8 @@ namespace Framework.JavaScript
                 case TypeCode.Object:
                     return this;
                 case TypeCode.Boolean:
-                    return (bool)value;
+                    if (value is bool rval) return rval;
+                    else throw new InvalidCastException(ToString());
                 case TypeCode.Char:
                     return Convert.ToChar(value, provider);
                 case TypeCode.SByte:
@@ -764,7 +813,7 @@ namespace Framework.JavaScript
                 case TypeCode.Decimal:
                     return Convert.ToDecimal(value, provider);
                 case TypeCode.DateTime:
-                    return DateTime.Parse((string)value);
+                    return DateTime.Parse((string?)value);
                 case TypeCode.String:
                     return Convert.ToString(value, provider);
                 default:

@@ -6,7 +6,7 @@ namespace Framework.Linq
     /// <summary>
     /// Type 的扩展对象
     /// </summary>
-    internal static class TypeExtension
+    public static class TypeExtension
     {
         /// <summary>
         /// 是否为封装的可空的值类型
@@ -24,6 +24,7 @@ namespace Framework.Linq
             }
             return false;
         }
+
         /// <summary>
         /// 是否是匿名类
         /// </summary>

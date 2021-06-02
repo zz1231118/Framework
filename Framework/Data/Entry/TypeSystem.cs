@@ -6,7 +6,7 @@ namespace Framework.Data.Entry
 {
     internal static class TypeSystem
     {
-        private static Type FindIEnumerable(Type sequenceType)
+        private static Type? FindIEnumerable(Type sequenceType)
         {
             // Ignores "terminal" primitive types in the EDM although they may implement IEnumerable<>
             if (sequenceType == null || sequenceType == typeof(string) || sequenceType == typeof(byte[]))

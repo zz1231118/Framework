@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Text;
 using Framework.JavaScript;
 
@@ -32,15 +31,13 @@ namespace Framework.Net.Remoting.Packets
                         var str = _encoding.GetString(data, 3, data.Length - 3);
                         Json = Json.Parse(str);
                         break;
-                    case MethodType.Bson:
-                        Json = Json.Parse(data.Skip(3).ToArray());
-                        break;
                     default:
                         throw new ArgumentException("unknown MethodType: " + Method.ToString());
                 }
             }
         }
-        public Packet(ActionType actionType, MethodType method = MethodType.Json, Json json = null)
+
+        public Packet(ActionType actionType, MethodType method = MethodType.Json, Json? json = null)
         {
             Action = actionType;
             if (json == null)
@@ -63,43 +60,22 @@ namespace Framework.Net.Remoting.Packets
                     Data[2] = (byte)method;
                     Array.Copy(byteAryForStr, 0, Data, 3, byteAryForStr.Length);
                     break;
-                case MethodType.Bson:
-                    var byteAryForBson = json.ToBinary();
-                    Data = new byte[byteAryForBson.Length + 3];
-                    Data[0] = Version;
-                    Data[1] = (byte)actionType;
-                    Data[2] = (byte)method;
-                    Array.Copy(byteAryForBson, 0, Data, 3, byteAryForBson.Length);
-                    break;
                 default:
                     throw new ArgumentException("unknown MethodType: " + Method.ToString());
             }
         }
 
         public byte Version => 2;
-        public byte[] Data
-        {
-            get;
-            private set;
-        }
-        public ActionType Action
-        {
-            get;
-            private set;
-        }
-        public MethodType Method
-        {
-            get;
-            private set;
-        }
-        public Json Json
-        {
-            get;
-            private set;
-        }
+        public byte[] Data { get; private set; }
+        public ActionType Action { get; private set; }
+        public MethodType Method { get; private set; }
+        public Json? Json { get; private set; }
 
-        public T GetValue<T>()
+        public T? GetValue<T>()
         {
+            if (Json == null)
+                throw new InvalidOperationException("Json should not be null");
+
             return JsonSerializer.Deserialize<T>(Json);
         }
     }

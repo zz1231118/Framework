@@ -21,14 +21,15 @@ namespace Framework.Data.Converters
 
         public object ConvertTo(object value, Type targetType)
         {
-            return Json.Parse(value as string);
+            if (value is not string text) throw new InvalidCastException();
+            else return Json.Parse(text);
         }
     }
 
     public class JsonConverter<TConverter> : IEntityConverter
         where TConverter : IJsonConverter, new()
     {
-        private IJsonConverter _converter;
+        private IJsonConverter? _converter;
 
         private IJsonConverter GetConverter()
         {
@@ -55,7 +56,12 @@ namespace Framework.Data.Converters
 
         public object ConvertTo(object value, Type targetType)
         {
-            var json = Json.Parse(value as string);
+            if (value is not string text)
+            {
+                throw new InvalidCastException();
+            }
+
+            var json = Json.Parse(text);
             var converter = GetConverter();
             return converter.ConvertTo(json, targetType);
         }

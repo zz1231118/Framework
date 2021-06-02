@@ -9,7 +9,7 @@ namespace Framework.Data.MsSql
 {
     internal class MsSqlConnection : BaseDisposed, IDbConnection
     {
-        private SqlConnection sqlConnection;
+        private readonly SqlConnection dbConnection;
 
         public MsSqlConnection(string sqlConnectionString, bool isTemporary)
         {
@@ -18,94 +18,115 @@ namespace Framework.Data.MsSql
             if (sqlConnectionString == string.Empty)
                 throw new ArgumentException(nameof(sqlConnectionString));
 
-            sqlConnection = new SqlConnection(sqlConnectionString);
+            dbConnection = new SqlConnection(sqlConnectionString);
             IsTemporary = isTemporary;
         }
 
         public DbConnectionCategory Category => DbConnectionCategory.MsSql;
 
-        public ConnectionState State => sqlConnection.State;
+        public ConnectionState State => dbConnection.State;
 
-        public DbConnection DbConnection => sqlConnection;
+        public DbConnection DbConnection => dbConnection;
 
         public bool IsTemporary { get; }
 
         public void Open()
         {
-            sqlConnection.Open();
+            dbConnection.Open();
         }
 
         public void Close()
         {
-            sqlConnection.Close();
+            dbConnection.Close();
         }
 
-        public void CheckConnect()
+        public void EnsureConnection()
         {
-            if (sqlConnection.State != ConnectionState.Open)
-                sqlConnection.Open();
-        }
-
-        public int ExecuteNonQuery(string commandText, CommandType commandType = CommandType.Text, IEnumerable<IDataParameter> parameters = null)
-        {
-            using (var sqlCommand = sqlConnection.CreateCommand())
+            if (dbConnection.State != ConnectionState.Open)
             {
-                sqlCommand.CommandText = commandText;
-                sqlCommand.CommandType = commandType;
-                if (parameters != null)
-                {
-                    sqlCommand.Parameters.AddRange(parameters.Cast<SqlParameter>().ToArray());
-                }
-                return sqlCommand.ExecuteNonQuery();
+                dbConnection.Open();
             }
         }
 
-        public IDataReader ExecuteReader(string commandText, CommandType commandType = CommandType.Text, IEnumerable<IDataParameter> parameters = null)
+        public int ExecuteNonQuery(string commandText, CommandType commandType = CommandType.Text, TimeSpan? commandTimeout = null, IEnumerable<IDataParameter>? parameters = null)
         {
-            using (var sqlCommand = sqlConnection.CreateCommand())
+            using (var dbCommand = dbConnection.CreateCommand())
             {
-                sqlCommand.CommandText = commandText;
-                sqlCommand.CommandType = commandType;
+                dbCommand.CommandText = commandText;
+                dbCommand.CommandType = commandType;
+                if (commandTimeout != null)
+                {
+                    dbCommand.CommandTimeout = checked((int)commandTimeout.Value.TotalSeconds);
+                }
                 if (parameters != null)
                 {
-                    sqlCommand.Parameters.AddRange(parameters.Cast<SqlParameter>().ToArray());
+                    dbCommand.Parameters.AddRange(parameters.Cast<SqlParameter>().ToArray());
                 }
-                return sqlCommand.ExecuteReader();
+                return dbCommand.ExecuteNonQuery();
             }
         }
 
-        public object ExecuteScalar(string commandText, CommandType commandType = CommandType.Text, IEnumerable<IDataParameter> parameters = null)
+        public IDataReader ExecuteReader(string commandText, CommandType commandType = CommandType.Text, TimeSpan? commandTimeout = null, IEnumerable<IDataParameter>? parameters = null)
         {
-            using (var sqlCommand = sqlConnection.CreateCommand())
+            using (var dbCommand = dbConnection.CreateCommand())
             {
-                sqlCommand.CommandText = commandText;
-                sqlCommand.CommandType = commandType;
+                dbCommand.CommandText = commandText;
+                dbCommand.CommandType = commandType;
+                if (commandTimeout != null)
+                {
+                    dbCommand.CommandTimeout = checked((int)commandTimeout.Value.TotalSeconds);
+                }
                 if (parameters != null)
                 {
-                    sqlCommand.Parameters.AddRange(parameters.Cast<SqlParameter>().ToArray());
+                    dbCommand.Parameters.AddRange(parameters.Cast<SqlParameter>().ToArray());
                 }
-                return sqlCommand.ExecuteScalar();
+                return dbCommand.ExecuteReader();
             }
         }
 
-        public T ExecuteScalar<T>(string commandText, CommandType commandType = CommandType.Text, IEnumerable<IDataParameter> parameters = null)
+        public object ExecuteScalar(string commandText, CommandType commandType = CommandType.Text, TimeSpan? commandTimeout = null, IEnumerable<IDataParameter>? parameters = null)
         {
-            using (var sqlCommand = sqlConnection.CreateCommand())
+            using (var dbCommand = dbConnection.CreateCommand())
             {
-                sqlCommand.CommandText = commandText;
-                sqlCommand.CommandType = commandType;
+                dbCommand.CommandText = commandText;
+                dbCommand.CommandType = commandType;
+                if (commandTimeout != null)
+                {
+                    dbCommand.CommandTimeout = checked((int)commandTimeout.Value.TotalSeconds);
+                }
                 if (parameters != null)
                 {
-                    sqlCommand.Parameters.AddRange(parameters.Cast<SqlParameter>().ToArray());
+                    dbCommand.Parameters.AddRange(parameters.Cast<SqlParameter>().ToArray());
                 }
-                var value = sqlCommand.ExecuteScalar();
+                return dbCommand.ExecuteScalar();
+            }
+        }
+
+        public T? ExecuteScalar<T>(string commandText, CommandType commandType = CommandType.Text, TimeSpan? commandTimeout = null, IEnumerable<IDataParameter>? parameters = null)
+        {
+            using (var dbCommand = dbConnection.CreateCommand())
+            {
+                dbCommand.CommandText = commandText;
+                dbCommand.CommandType = commandType;
+                if (commandTimeout != null)
+                {
+                    dbCommand.CommandTimeout = checked((int)commandTimeout.Value.TotalSeconds);
+                }
+                if (parameters != null)
+                {
+                    dbCommand.Parameters.AddRange(parameters.Cast<SqlParameter>().ToArray());
+                }
+                var value = dbCommand.ExecuteScalar();
                 if (value == DBNull.Value)
                 {
                     if (typeof(T).IsValueType)
+                    {
                         throw new InvalidCastException();
+                    }
 
                     return default(T);
                 }
+
                 return (T)Convert.ChangeType(value, typeof(T));
             }
         }
@@ -116,9 +137,7 @@ namespace Framework.Data.MsSql
             {
                 try
                 {
-                    sqlConnection.Dispose();
-
-                    sqlConnection = null;
+                    dbConnection.Dispose();
                 }
                 finally
                 {

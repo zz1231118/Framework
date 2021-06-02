@@ -2,23 +2,50 @@
 
 namespace Framework.Data
 {
+    /// <inheritdoc />
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-    public class EntityTableAttribute : TypeAttribute
+    public class EntityTableAttribute : Attribute
     {
-        private string name;
+        private Type? reflectedType;
+        private string? name;
         private AccessLevel accessLevel = AccessLevel.ReadWrite;
         private DataSaveUsage saveMode = DataSaveUsage.Procedure;
         private EntitySchemaAttributes attributes = EntitySchemaAttributes.Conservatism;
 
+        /// <inheritdoc />
         public EntityTableAttribute()
         { }
 
+        /// <inheritdoc />
         public EntityTableAttribute(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
             this.name = name;
+        }
+
+        /// <summary>
+        /// 获取用于获取该成员的类对象的类型。
+        /// </summary>
+        public Type ReflectedType
+        { 
+            get => reflectedType ?? throw new InvalidOperationException("ReflectedType should not be null"); 
+            internal set => reflectedType = value;
+        }
+
+        /// <summary>
+        /// 获取用来声明当前类型参数的类型。
+        /// </summary>
+        public Type DeclaringType
+        {
+            get
+            {
+                if (reflectedType == null)
+                    throw new InvalidOperationException("ReflectedType should not be null");
+
+                return reflectedType.DeclaringType;
+            }
         }
 
         /// <summary>
@@ -30,10 +57,10 @@ namespace Framework.Data
             {
                 if (name == null)
                 {
-                    if (ReflectedType == null)
-                        throw new InvalidOperationException("ReflectedType is null!");
+                    if (reflectedType == null)
+                        throw new InvalidOperationException("ReflectedType should not be null");
 
-                    name = ReflectedType.Name;
+                    name = reflectedType.Name;
                 }
                 return name;
             }
@@ -43,7 +70,7 @@ namespace Framework.Data
         /// <summary>
         /// 连接串的 Key
         /// </summary>
-        public string ConnectKey { get; set; }
+        public string? ConnectKey { get; set; }
 
         /// <summary>
         /// 访问权限级别

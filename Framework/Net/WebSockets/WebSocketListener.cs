@@ -44,6 +44,8 @@ namespace Framework.Net.WebSockets
                 handshakeProcessor = new Hybi00HandshakeProcessor(this, setting.Encoding);
                 messageProcessor = new Hybi00MessageProcessor();
             }
+
+            acceptEventArgsPool = new BlockingCollection<SocketAsyncEventArgs>();
             for (int i = 0; i < setting.MaxAcceptOps; i++)
             {
                 var acceptEventArgs = new SocketAsyncEventArgs();
@@ -70,11 +72,11 @@ namespace Framework.Net.WebSockets
         public bool IsSecurity => setting.IsSecurity;
         public bool IsActivated => isActivated;
 
-        public event EventHandler<WebSocketEventArgs> Ping;
-        public event EventHandler<WebSocketEventArgs> Pong;
-        public event EventHandler<WebSocketEventArgs> Connected;
-        public event EventHandler<WebSocketEventArgs> DataReceived;
-        public event EventHandler<WebSocketEventArgs> Disconnected;
+        public event EventHandler<WebSocketEventArgs>? Ping;
+        public event EventHandler<WebSocketEventArgs>? Pong;
+        public event EventHandler<WebSocketEventArgs>? Connected;
+        public event EventHandler<WebSocketEventArgs>? DataReceived;
+        public event EventHandler<WebSocketEventArgs>? Disconnected;
 
         public void Start()
         {
@@ -168,7 +170,6 @@ namespace Framework.Net.WebSockets
 
                 var cltSocket = ioEventArgs.AcceptSocket;
                 var newSocket = new WebSocket(this, cltSocket);
-                newSocket.LastAccessTime = DateTime.Now;
 
                 var dataToken = (DataToken)ioEventArgs.UserToken;
                 dataToken.Socket = newSocket;
@@ -309,7 +310,7 @@ namespace Framework.Net.WebSockets
             }
             catch (Exception ex)
             {
-                logger.Error("SocketListener Accept_Completed error:" + ex);
+                logger.Error("SocketListener Accept_Completed error:{0}", ex);
                 //throw ex;
             }
         }
@@ -495,8 +496,8 @@ namespace Framework.Net.WebSockets
 
                 var dataToken = (DataToken)ioEventArgs.UserToken;
                 dataToken.Socket = socket;
-                dataToken.byteArrayForMessage = data;
-                dataToken.messageLength = data.Length;
+                dataToken.ByteArrayForMessage = data;
+                dataToken.MessageLength = data.Length;
 
                 try
                 {
@@ -522,15 +523,15 @@ namespace Framework.Net.WebSockets
         private void PostSend(SocketAsyncEventArgs ioEventArgs)
         {
             var dataToken = (DataToken)ioEventArgs.UserToken;
-            if (dataToken.messageLength - dataToken.messageBytesDone <= setting.BufferSize)
+            if (dataToken.MessageLength - dataToken.MessageBytesDone <= setting.BufferSize)
             {
-                ioEventArgs.SetBuffer(ioEventArgs.Offset, dataToken.messageLength - dataToken.messageBytesDone);
-                Buffer.BlockCopy(dataToken.byteArrayForMessage, dataToken.messageBytesDone, ioEventArgs.Buffer, ioEventArgs.Offset, dataToken.messageLength - dataToken.messageBytesDone);
+                ioEventArgs.SetBuffer(ioEventArgs.Offset, dataToken.MessageLength - dataToken.MessageBytesDone);
+                Buffer.BlockCopy(dataToken.ByteArrayForMessage, dataToken.MessageBytesDone, ioEventArgs.Buffer, ioEventArgs.Offset, dataToken.MessageLength - dataToken.MessageBytesDone);
             }
             else
             {
                 ioEventArgs.SetBuffer(ioEventArgs.Offset, setting.BufferSize);
-                Buffer.BlockCopy(dataToken.byteArrayForMessage, dataToken.messageBytesDone, ioEventArgs.Buffer, ioEventArgs.Offset, setting.BufferSize);
+                Buffer.BlockCopy(dataToken.ByteArrayForMessage, dataToken.MessageBytesDone, ioEventArgs.Buffer, ioEventArgs.Offset, setting.BufferSize);
             }
 
             var willRaiseEvent = ioEventArgs.AcceptSocket.SendAsync(ioEventArgs);
@@ -545,8 +546,8 @@ namespace Framework.Net.WebSockets
             var dataToken = (DataToken)ioEventArgs.UserToken;
             if (ioEventArgs.SocketError == SocketError.Success)
             {
-                dataToken.messageBytesDone += ioEventArgs.BytesTransferred;
-                if (dataToken.messageBytesDone != dataToken.messageLength)
+                dataToken.MessageBytesDone += ioEventArgs.BytesTransferred;
+                if (dataToken.MessageBytesDone != dataToken.MessageLength)
                 {
                     PostSend(ioEventArgs);
                 }

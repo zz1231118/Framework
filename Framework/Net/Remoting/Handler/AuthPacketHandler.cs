@@ -14,9 +14,8 @@ namespace Framework.Net.Remoting.Handler
 
         public override void HandlePacket(IPacket packet)
         {
-            if (packet is Packet)
+            if (packet is Packet package)
             {
-                var package = packet as Packet;
                 if (package.Action != ActionType.Validate)
                 {
                     NotVerified();

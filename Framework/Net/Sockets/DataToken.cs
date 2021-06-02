@@ -7,27 +7,27 @@ namespace Framework.Net.Sockets
         public const int PrefixLength = sizeof(int);
         public const int MaxMessageLength = 10 * 1024 * 1024;
 
-        internal byte[] byteArrayForMessage;
-        internal byte[] byteArrayForPrefix = new byte[PrefixLength];
-        internal int messageBytesDone;
-        internal int prefixBytesDone;
-        internal int messageLength;
+        internal byte[]? ByteArrayForMessage;
+        internal byte[] ByteArrayForPrefix = new byte[PrefixLength];
+        internal int MessageBytesDone;
+        internal int PrefixBytesDone;
+        internal int MessageLength;
 
-        public ExSocket Socket { get; internal set; }
+        public ExSocket? Socket { get; internal set; }
 
-        public int RemainByte => messageLength - messageBytesDone;
+        public int RemainByte => MessageLength - MessageBytesDone;
 
-        public bool IsPrefixReady => prefixBytesDone == PrefixLength;
+        public bool IsPrefixReady => PrefixBytesDone == PrefixLength;
 
-        public bool IsMessageReady => messageBytesDone == messageLength;
+        public bool IsMessageReady => MessageBytesDone == MessageLength;
 
         public virtual void Reset()
         {
-            byteArrayForMessage = null;
-            Array.Clear(byteArrayForPrefix, 0, byteArrayForPrefix.Length);
-            prefixBytesDone = 0;
-            messageBytesDone = 0;
-            messageLength = 0;
+            ByteArrayForMessage = null;
+            Array.Clear(ByteArrayForPrefix, 0, ByteArrayForPrefix.Length);
+            PrefixBytesDone = 0;
+            MessageBytesDone = 0;
+            MessageLength = 0;
         }
     }
 }

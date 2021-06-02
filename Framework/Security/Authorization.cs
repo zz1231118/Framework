@@ -3,6 +3,7 @@ using Framework.JavaScript;
 
 namespace Framework.Security
 {
+    [Serializable]
     public sealed class Authorization : IAuthorization
     {
         internal Authorization()

@@ -1,5 +1,6 @@
 ﻿namespace Framework.Data.Expressions
 {
+    /// <inheritdoc />
     public class SqlBinaryExpression : SqlExpression
     {
         private readonly SqlExpressionType _nodeType;
@@ -13,12 +14,16 @@
             _right = right;
         }
 
+        /// <inheritdoc />
         public override SqlExpressionType NodeType => _nodeType;
 
+        /// <inheritdoc />
         public SqlExpression Left => _left;
 
+        /// <inheritdoc />
         public SqlExpression Right => _right;
 
+        /// <inheritdoc />
         protected internal override void Accept(SqlExpressionVisitor visitor)
         {
             visitor.Binary(this);

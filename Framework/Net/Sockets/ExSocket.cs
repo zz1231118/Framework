@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -27,16 +28,8 @@ namespace Framework.Net.Sockets
         internal ExSocket(Socket workSocket)
         {
             this.workSocket = workSocket;
-
-            try
-            {
-                localEndPoint = this.workSocket.LocalEndPoint;
-                remoteEndPoint = this.workSocket.RemoteEndPoint;
-            }
-            catch (Exception ex)
-            {
-                logger.Error("ExSocket Init error:{0}", ex);
-            }
+            this.localEndPoint = workSocket.LocalEndPoint;
+            this.remoteEndPoint = workSocket.RemoteEndPoint;
         }
 
         /// <inheritdoc />
@@ -58,13 +51,10 @@ namespace Framework.Net.Sockets
         public Guid Guid { get; } = Guid.NewGuid();
 
         /// <inheritdoc />
-        public DateTime LastAccessTime { get; internal set; }
-
-        /// <inheritdoc />
         public int WaitSendPacketCount => sendQueue.Count;
 
         /// <inheritdoc />
-        public object UserToken { get; set; }
+        public object? UserToken { get; set; }
 
         internal bool DirectSendOrEnqueue(byte[] data)
         {
@@ -78,7 +68,7 @@ namespace Framework.Net.Sockets
             }
         }
 
-        internal bool TryDequeueOrReset(out byte[] data)
+        internal bool TryDequeueOrReset(out byte[]? data)
         {
             lock (this)
             {

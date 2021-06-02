@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Framework.Data
 {
@@ -35,7 +36,7 @@ namespace Framework.Data
         /// <summary>
         /// 数据库配置连接Key
         /// </summary>
-        string ConnectKey { get; }
+        string? ConnectKey { get; }
 
         /// <summary>
         /// 数据交换模式
@@ -47,8 +48,8 @@ namespace Framework.Data
         /// </summary>
         EntitySchemaAttributes Attributes { get; }
 
-        bool TryGetTable(string name, out ISchemaTable table);
+        bool TryGetTable(string name, out ISchemaTable? table);
 
-        bool TryGetColumn(string name, out ISchemaColumn column);
+        bool TryGetColumn(string name, out ISchemaColumn? column);
     }
 }

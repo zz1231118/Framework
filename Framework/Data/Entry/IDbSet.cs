@@ -4,11 +4,11 @@ namespace Framework.Data.Entry
 {
     public interface IDbSet : ISet
     {
-        void Add(object entity);
+        RowEntry Add(object entity);
 
-        void Modify(object entity);
+        RowEntry Modify(object entity);
 
-        void Remove(object entity);
+        RowEntry Remove(object entity);
 
         void AddRange(IEnumerable<object> entities);
 
@@ -19,11 +19,11 @@ namespace Framework.Data.Entry
 
     public interface IDbSet<in T> : ISet
     {
-        void Add(T entity);
+        RowEntry Add(T entity);
 
-        void Modify(T entity);
+        RowEntry Modify(T entity);
 
-        void Remove(T entity);
+        RowEntry Remove(T entity);
 
         void AddRange(IEnumerable<T> entities);
 

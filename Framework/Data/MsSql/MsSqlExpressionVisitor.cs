@@ -102,7 +102,7 @@ namespace Framework.Data.MsSql
         {
             if (node.Value == null)
             {
-                SqlBuilder.Append("null");
+                SqlBuilder.Append("Null");
             }
             else
             {

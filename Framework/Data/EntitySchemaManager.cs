@@ -3,26 +3,55 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Framework.Linq;
 
 namespace Framework.Data
 {
+    /// <summary>
+    /// 实体架构信息管理器
+    /// </summary>
     public static class EntitySchemaManager
     {
         private readonly static ConcurrentDictionary<string, IEntitySchema> entitySchemas = new ConcurrentDictionary<string, IEntitySchema>();
 
+        /// <summary>
+        /// 实体架构信息集合
+        /// </summary>
         public static ICollection<IEntitySchema> Schemas => entitySchemas.Values;
+
+        private static EntityTableAttribute? GetEntityTableAttribute(Type type)
+        {
+            var attribute = type.GetCustomAttribute<EntityTableAttribute>();
+            if (attribute != null) attribute.ReflectedType = type;
+            return attribute;
+        }
+
+        private static List<EntityColumnAttribute> GetEntityColumnAttributes(Type type)
+        {
+            var columns = new List<EntityColumnAttribute>();
+            foreach (var propertyInfo in ReflexHelper.GetPropertys(type))
+            {
+                var attribute = propertyInfo.GetCustomAttribute<EntityColumnAttribute>();
+                if (attribute != null)
+                {
+                    attribute.PropertyInfo = propertyInfo;
+                    columns.Add(attribute);
+                }
+            }
+            return columns;
+        }
 
         /// <summary>
         /// 加载实体程序集
         /// </summary>
-        public static void LoadAssemblys(params Assembly[] assemblys)
+        public static void LoadAssemblys(params Assembly[] assemblies)
         {
-            if (assemblys == null)
-                throw new ArgumentNullException(nameof(assemblys));
+            if (assemblies == null)
+                throw new ArgumentNullException(nameof(assemblies));
 
-            foreach (var assembly in assemblys)
+            foreach (var assembly in assemblies)
             {
-                foreach (var type in assembly.GetTypes().Where(p => p.GetCustomAttribute<EntityTableAttribute>() != null))
+                foreach (var type in assembly.GetTypes().Where(p => p.IsDefined<EntityTableAttribute>()))
                 {
                     LoadEntity(type);
                 }
@@ -36,48 +65,46 @@ namespace Framework.Data
         {
             if (entityType == null)
                 throw new ArgumentNullException(nameof(entityType));
-
-            var entityTable = EntityUtils.GetEntityTableAttribute(entityType);
-            if (entityTable == null)
+            
+            var contract = GetEntityTableAttribute(entityType);
+            if (contract == null)
             {
                 //EntityTableAttribute not found
-                throw new ArgumentException(string.Format("type:{0} not found EntityTableAttribute!", entityType.FullName));
+                throw new ArgumentException($"type:{entityType.FullName} not found EntityTableAttribute!");
             }
 
             var orderNum = 0;
             var columnList = new List<ISchemaColumn>();
-            foreach (var entityColumn in EntityUtils.GetEntityColumnAttributes(entityType))
+            foreach (var entityColumn in GetEntityColumnAttributes(entityType))
             {
-                if (entityColumn.Model.HasFlag(ColumnModel.ReadOnly) && !entityColumn.CanWrite)
+                if (entityColumn.Mode.HasFlag(ColumnMode.ReadOnly) && !entityColumn.CanWrite)
                 {
-                    throw new ArgumentException($"{entityType.FullName}.{entityColumn.Name} not to writer");
+                    throw new InvalidOperationException($"{entityType.FullName}.{entityColumn.Name} not to writer");
                 }
-                if (entityColumn.Model.HasFlag(ColumnModel.WriteOnly) && !entityColumn.CanRead)
+                if (entityColumn.Mode.HasFlag(ColumnMode.WriteOnly) && !entityColumn.CanRead)
                 {
-                    throw new ArgumentException($"{entityType.FullName}.{entityColumn.Name} not to reader");
+                    throw new InvalidOperationException($"{entityType.FullName}.{entityColumn.Name} not to reader");
                 }
 
-                var column = new SchemaColumn();
-                column.Order = ++orderNum;
-                column.PropertyInfo = entityColumn.PropertyInfo;
-                column.PropertyType = entityColumn.PropertyType;
-                column.Name = entityColumn.Name;
-                column.Table = entityColumn.Table ?? entityTable.Name;
-                column.IsIdentity = entityColumn.IsIdentity;
-                column.IdentitySeed = entityColumn.IdentitySeed;
-                column.Increment = entityColumn.Increment;
-                column.IsPrimary = entityColumn.IsPrimary;
-                column.IsNullable = entityColumn.IsNullable;
-                column.Model = entityColumn.Model;
-                column.DefaultValue = entityColumn.DefaultValue;
-                column.DeclaringType = entityColumn.DeclaringType;
-                column.ReflectedType = entityColumn.ReflectedType;
-                column.DbType = entityColumn.DbType;
-                column.MaxLength = entityColumn.MaxLength;
-                column.CanRead = entityColumn.CanRead;
-                column.CanWrite = entityColumn.CanWrite;
-                column.ConvertType = entityColumn.ConvertType;
-
+                var column = new SchemaColumn(++orderNum,
+                    entityColumn.Table ?? contract.Name,
+                    entityColumn.Name,
+                    entityColumn.MaxLength,
+                    entityColumn.DbType,
+                    entityColumn.PropertyInfo,
+                    entityColumn.PropertyType,
+                    entityColumn.DeclaringType,
+                    entityColumn.ReflectedType,
+                    entityColumn.ConverterType,
+                    entityColumn.Mode,
+                    entityColumn.CanRead,
+                    entityColumn.CanWrite,
+                    entityColumn.IsNullable,
+                    entityColumn.IsPrimary,
+                    entityColumn.IsIdentity,
+                    entityColumn.IdentitySeed,
+                    entityColumn.Increment,
+                    entityColumn.DefaultValue);
                 columnList.Add(column);
             }
 
@@ -116,13 +143,13 @@ namespace Framework.Data
                 schemaTableList.Add(schemaTable);
             }
 
-            var entitySchema = new EntitySchema(schemaTableList);
-            entitySchema.EntityType = entityType;
-            entitySchema.AccessLevel = entityTable.AccessLevel;
-            entitySchema.Name = entityTable.Name;
-            entitySchema.ConnectKey = entityTable.ConnectKey;
-            entitySchema.SaveUsage = entityTable.SaveUsage;
-            entitySchema.Attributes = entityTable.Attributes;
+            var entitySchema = new EntitySchema(contract.Name, 
+                entityType, 
+                contract.AccessLevel, 
+                contract.ConnectKey, 
+                contract.SaveUsage, 
+                contract.Attributes, 
+                schemaTableList);
             entitySchemas[entityType.FullName] = entitySchema;
             return entitySchema;
         }
@@ -136,11 +163,21 @@ namespace Framework.Data
             return LoadEntity(typeof(T));
         }
 
+        /// <summary>
+        /// 指定实体架构信息是否存在
+        /// </summary>
+        /// <param name="fullName">指定实体全名</param>
+        /// <returns></returns>
         public static bool Contains(string fullName)
         {
             return entitySchemas.ContainsKey(fullName);
         }
 
+        /// <summary>
+        /// 指定实体架构信息是否存在
+        /// </summary>
+        /// <param name="entityType">指定实体类型</param>
+        /// <returns></returns>
         public static bool Contains(Type entityType)
         {
             if (entityType == null)
@@ -149,6 +186,11 @@ namespace Framework.Data
             return entitySchemas.ContainsKey(entityType.FullName);
         }
 
+        /// <summary>
+        /// 从管理器中移除指定实体架构信息
+        /// </summary>
+        /// <param name="schema"></param>
+        /// <returns></returns>
         public static bool Remove(IEntitySchema schema)
         {
             if (schema == null)
@@ -157,6 +199,12 @@ namespace Framework.Data
             return entitySchemas.TryRemove(schema.EntityType.FullName, out _);
         }
 
+        /// <summary>
+        /// 获取指定实体架构信息
+        /// </summary>
+        /// <param name="fullName">欲获取架构信息的实体全名</param>
+        /// <param name="throwOnError">如果不存在是否抛出异常</param>
+        /// <returns></returns>
         public static IEntitySchema GetSchema(string fullName, bool throwOnError = false)
         {
             if (fullName == null)
@@ -172,6 +220,12 @@ namespace Framework.Data
             return table;
         }
 
+        /// <summary>
+        /// 获取指定实体架构信息
+        /// </summary>
+        /// <param name="entityType">欲获取架构信息的实体类型</param>
+        /// <param name="throwOnError">如果不存在是否抛出异常</param>
+        /// <returns></returns>
         public static IEntitySchema GetSchema(Type entityType, bool throwOnError = false)
         {
             if (entityType == null)
@@ -180,24 +234,23 @@ namespace Framework.Data
             return GetSchema(entityType.FullName, throwOnError);
         }
 
+        /// <summary>
+        /// 获取指定实体架构信息
+        /// </summary>
+        /// <typeparam name="T">欲获取架构信息的实体类型</typeparam>
+        /// <param name="throwOnError">如果不存在是否抛出异常</param>
+        /// <returns></returns>
         public static IEntitySchema GetSchema<T>(bool throwOnError = false)
         {
             return GetSchema(typeof(T).FullName, throwOnError);
         }
 
-        public static bool TryGetSchema<T>(out IEntitySchema schema)
-        {
-            return TryGetSchema(typeof(T).FullName, out schema);
-        }
-
-        public static bool TryGetSchema(Type entityType, out IEntitySchema schema)
-        {
-            if (entityType == null)
-                throw new ArgumentNullException(nameof(entityType));
-
-            return TryGetSchema(entityType.FullName, out schema);
-        }
-
+        /// <summary>
+        /// 尝试获取指定实体架构信息
+        /// </summary>
+        /// <param name="fullName">欲获取架构信息的实体全名</param>
+        /// <param name="schema">如果指定实体架构信息存在，则返回，否则返回null。</param>
+        /// <returns></returns>
         public static bool TryGetSchema(string fullName, out IEntitySchema schema)
         {
             if (fullName == null)
@@ -206,6 +259,31 @@ namespace Framework.Data
                 throw new ArgumentException(nameof(fullName));
 
             return entitySchemas.TryGetValue(fullName, out schema);
+        }
+
+        /// <summary>
+        /// 尝试获取指定实体架构信息
+        /// </summary>
+        /// <typeparam name="T">欲获取架构信息的实体类型</typeparam>
+        /// <param name="schema">如果指定实体架构信息存在，则返回，否则返回null。</param>
+        /// <returns></returns>
+        public static bool TryGetSchema<T>(out IEntitySchema schema)
+        {
+            return TryGetSchema(typeof(T).FullName, out schema);
+        }
+
+        /// <summary>
+        /// 尝试获取指定实体架构信息
+        /// </summary>
+        /// <param name="entityType">欲获取架构信息的实体类型</param>
+        /// <param name="schema">如果指定实体架构信息存在，则返回，否则返回null。</param>
+        /// <returns></returns>
+        public static bool TryGetSchema(Type entityType, out IEntitySchema schema)
+        {
+            if (entityType == null)
+                throw new ArgumentNullException(nameof(entityType));
+
+            return TryGetSchema(entityType.FullName, out schema);
         }
     }
 }

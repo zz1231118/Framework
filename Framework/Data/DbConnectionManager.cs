@@ -6,8 +6,8 @@ namespace Framework.Data
 {
     public static class DbConnectionManager
     {
+        private static readonly ConcurrentDictionary<string, DbConnectionProvider> connectionProviders = new ConcurrentDictionary<string, DbConnectionProvider>();
         private static bool isDisposed;
-        private static ConcurrentDictionary<string, DbConnectionProvider> connectionProviders = new ConcurrentDictionary<string, DbConnectionProvider>();
 
         public static ICollection<string> Names => connectionProviders.Keys;
 
@@ -46,8 +46,9 @@ namespace Framework.Data
 
             if (!connectionProviders.TryGetValue(name, out DbConnectionProvider value) && throwOnError)
             {
-                throw new KeyNotFoundException("name:" + name);
+                throw new KeyNotFoundException($"name: {name}");
             }
+
             return value;
         }
 
@@ -65,13 +66,12 @@ namespace Framework.Data
             {
                 try
                 {
-                    foreach (var dbProvider in connectionProviders.Values)
+                    foreach (var connectionProvider in connectionProviders.Values)
                     {
-                        dbProvider.Dispose();
+                        connectionProvider.Dispose();
                     }
 
                     connectionProviders.Clear();
-                    connectionProviders = null;
                 }
                 finally
                 {

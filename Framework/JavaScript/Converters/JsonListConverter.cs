@@ -18,7 +18,7 @@ namespace Framework.JavaScript.Converters
                 throw new InvalidCastException();
             if (value == Json.Null)
                 return null;
-            if (!(value is JsonArray jarray))
+            if (value is not JsonArray jarray)
                 throw new InvalidCastException();
 
             var collection = (System.Collections.IList)Activator.CreateInstance(conversionType, true);
@@ -34,7 +34,7 @@ namespace Framework.JavaScript.Converters
         {
             if (value == null)
                 return Json.Null;
-            if (!(value is System.Collections.IList collection))
+            if (value is not System.Collections.IList collection)
                 throw new InvalidCastException();
 
             var array = new JsonArray();

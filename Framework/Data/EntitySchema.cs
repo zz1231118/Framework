@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Framework.Data
@@ -10,13 +11,22 @@ namespace Framework.Data
     internal class EntitySchema : IEntitySchema
     {
         private readonly Dictionary<string, ISchemaTable> tables = new Dictionary<string, ISchemaTable>();
-        private List<ISchemaColumn> columns;
+        private readonly string name;
+        private readonly Type entityType;
+        private readonly AccessLevel accessLevel;
+        private readonly string? connectKey;
+        private DataSaveUsage saveUsage;
+        private readonly EntitySchemaAttributes attributes;
+        private List<ISchemaColumn>? columns;
 
-        public EntitySchema(IEnumerable<SchemaTable> tables)
+        public EntitySchema(string name, Type entityType, AccessLevel accessLevel, string? connectKey, DataSaveUsage saveUsage, EntitySchemaAttributes attributes, IEnumerable<SchemaTable> tables)
         {
-            if (tables == null)
-                throw new ArgumentNullException(nameof(tables));
-
+            this.name = name;
+            this.entityType = entityType;
+            this.accessLevel = accessLevel;
+            this.connectKey = connectKey;
+            this.saveUsage = saveUsage;
+            this.attributes = attributes;
             foreach (var table in tables)
             {
                 table.Schema = this;
@@ -71,39 +81,39 @@ namespace Framework.Data
         /// <summary>
         /// 视图名称
         /// </summary>
-        public string Name { get; set; }
+        public string Name => name;
 
         /// <summary>
         /// 绑定的实体类型
         /// </summary>
-        public Type EntityType { get; set; }
+        public Type EntityType => entityType;
 
         /// <summary>
         /// 访问权限级别
         /// </summary>
-        public AccessLevel AccessLevel { get; set; }
+        public AccessLevel AccessLevel => accessLevel;
 
         /// <summary>
         /// 数据库配置连接Key
         /// </summary>
-        public string ConnectKey { get; set; }
+        public string? ConnectKey => connectKey;
 
         /// <summary>
         /// 保存模式
         /// </summary>
-        public DataSaveUsage SaveUsage { get; set; }
+        public DataSaveUsage SaveUsage => saveUsage;
 
         /// <summary>
         /// 特性
         /// </summary>
-        public EntitySchemaAttributes Attributes { get; set; }
+        public EntitySchemaAttributes Attributes => attributes;
 
-        public bool TryGetTable(string name, out ISchemaTable table)
+        public bool TryGetTable(string name, out ISchemaTable? table)
         {
             return tables.TryGetValue(name, out table);
         }
 
-        public bool TryGetColumn(string name, out ISchemaColumn column)
+        public bool TryGetColumn(string name, out ISchemaColumn? column)
         {
             foreach (var table in tables.Values)
             {
@@ -116,6 +126,7 @@ namespace Framework.Data
                     }
                 }
             }
+
             column = null;
             return false;
         }

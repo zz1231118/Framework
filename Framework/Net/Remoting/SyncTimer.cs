@@ -8,7 +8,7 @@ namespace Framework.Net.Remoting
         private readonly TimerCallback _callback;
         private Timer _timer;
         private int isInTimer;
-        private Thread _executeThread;
+        private Thread? _executeThread;
         private Timer _executeTimer;
 
         public int DueTime { get; set; }
@@ -46,10 +46,10 @@ namespace Framework.Net.Remoting
             {
                 if (isInTimer == 1)
                 {
-                    var myExecuteThread = Interlocked.Exchange<Thread>(ref _executeThread, null);
-                    if (myExecuteThread != null)
+                    var executeThread = Interlocked.Exchange(ref _executeThread, null);
+                    if (executeThread != null)
                     {
-                        myExecuteThread.Abort();
+                        executeThread.Abort();
                     }
                     isInTimer = 0;
                 }

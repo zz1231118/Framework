@@ -5,41 +5,53 @@
     /// </summary>
     public class SocketListenerStatistics
     {
-        internal Int32CounterStatistic inboundConnectionCounter = new Int32CounterStatistic(nameof(InboundConnectionCount));
-        internal Int32CounterStatistic currentConnectionCounter = new Int32CounterStatistic(nameof(CurrentConnectionCount));
-        internal Int32CounterStatistic rejectedConnectionCounter = new Int32CounterStatistic(nameof(RejectedConnectionCount));
-        internal Int32CounterStatistic closedConnectionCounter = new Int32CounterStatistic(nameof(ClosedConnectionCount));
-        internal Int32CounterStatistic sendConcurrencyCounter = new Int32CounterStatistic(nameof(SendConcurrencyCount));
-        internal Int32CounterStatistic recvConcurrencyCounter = new Int32CounterStatistic(nameof(ReceiveConcurrencyCount));
+        internal readonly Int32Counter InboundConnectionCounter = new Int32Counter(nameof(InboundConnectionCount));
+        internal readonly Int32Counter CurrentConnectionCounter = new Int32Counter(nameof(CurrentConnectionCount));
+        internal readonly Int32Counter RejectedConnectionCounter = new Int32Counter(nameof(RejectedConnectionCount));
+        internal readonly Int32Counter ClosedConnectionCounter = new Int32Counter(nameof(ClosedConnectionCount));
+        internal readonly Int32Counter SendConcurrencyCounter = new Int32Counter(nameof(SendConcurrencyCount));
+        internal readonly Int32Counter ReceiveConcurrencyCounter = new Int32Counter(nameof(ReceiveConcurrencyCount));
+        internal readonly Int64Counter SentBytesTotalCounter = new Int64Counter(nameof(SentBytesTotal));
+        internal readonly Int64Counter ReceivedBytesTotalCounter = new Int64Counter(nameof(ReceivedBytesTotal));
 
         /// <summary>
         /// Inbound connection count
         /// </summary>
-        public int InboundConnectionCount => inboundConnectionCounter.Value;
+        public int InboundConnectionCount => InboundConnectionCounter.Value;
 
         /// <summary>
         /// Current connection count
         /// </summary>
-        public int CurrentConnectionCount => currentConnectionCounter.Value;
+        public int CurrentConnectionCount => CurrentConnectionCounter.Value;
 
         /// <summary>
         /// Rejected connection count
         /// </summary>
-        public int RejectedConnectionCount => rejectedConnectionCounter.Value;
+        public int RejectedConnectionCount => RejectedConnectionCounter.Value;
 
         /// <summary>
         /// Closed connection count
         /// </summary>
-        public int ClosedConnectionCount => closedConnectionCounter.Value;
+        public int ClosedConnectionCount => ClosedConnectionCounter.Value;
 
         /// <summary>
         /// Send concurrency count
         /// </summary>
-        public int SendConcurrencyCount => sendConcurrencyCounter.Value;
+        public int SendConcurrencyCount => SendConcurrencyCounter.Value;
 
         /// <summary>
         /// Receive concurrency count
         /// </summary>
-        public int ReceiveConcurrencyCount => recvConcurrencyCounter.Value;
+        public int ReceiveConcurrencyCount => ReceiveConcurrencyCounter.Value;
+
+        /// <summary>
+        /// Total sent byte length
+        /// </summary>
+        public long SentBytesTotal => SentBytesTotalCounter.Value;
+
+        /// <summary>
+        /// Total received byte length
+        /// </summary>
+        public long ReceivedBytesTotal => ReceivedBytesTotalCounter.Value;
     }
 }

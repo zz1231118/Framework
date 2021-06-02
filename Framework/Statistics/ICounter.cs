@@ -9,5 +9,7 @@
         where T : struct
     {
         T Value { get; }
+
+        T Reset();
     }
 }

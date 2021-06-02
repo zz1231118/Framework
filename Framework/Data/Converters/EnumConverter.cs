@@ -15,7 +15,7 @@ namespace Framework.Data.Converters
         public object ConvertFrom(object value, Type targetType)
         {
             var underlyingType = Enum.GetUnderlyingType(targetType);
-            return System.Convert.ChangeType(value, underlyingType);
+            return Convert.ChangeType(value, underlyingType);
         }
 
         public object ConvertTo(object value, Type targetType)
